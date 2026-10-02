@@ -92,6 +92,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 	case launchDone:
+		if a, ok := msg.item.(interface{ AfterLaunch() }); ok {
+			a.AfterLaunch()
+		}
 		if m.list != nil {
 			m.list.refresh()
 			if msg.err != nil {

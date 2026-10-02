@@ -65,7 +65,10 @@ func (l *list) applyFilter() {
 // program in the foreground instead of a plain Enable.
 type launcher interface{ Launch() *exec.Cmd }
 
-type launchDone struct{ err error }
+type launchDone struct {
+	err  error
+	item Toggle
+}
 
 // update handles a key, reports whether the screen should close, and may
 // return a command to run.
@@ -138,13 +141,14 @@ func (l *list) apply() tea.Cmd {
 	l.status = nil
 	on, off := 0, 0
 	var launch *exec.Cmd
+	var launched Toggle
 	for i, it := range l.items {
 		if l.want[i] == l.current[i] {
 			continue
 		}
 		var err error
 		if lr, ok := it.(launcher); ok && l.want[i] {
-			launch = lr.Launch()
+			launch, launched = lr.Launch(), it
 			continue
 		}
 		if l.want[i] {
@@ -171,7 +175,7 @@ func (l *list) apply() tea.Cmd {
 	}
 	l.refresh()
 	if launch != nil {
-		return tea.ExecProcess(launch, func(err error) tea.Msg { return launchDone{err} })
+		return tea.ExecProcess(launch, func(err error) tea.Msg { return launchDone{err, launched} })
 	}
 	return nil
 }
