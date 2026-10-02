@@ -70,3 +70,7 @@ irm https://raw.githubusercontent.com/aveekpatra/claude_patcher/main/install.ps1
 ## Release
 
 Push a tag (`git tag v0.1.0 && git push --tags`). GitHub Actions builds binaries for macOS, Linux and Windows (amd64 + arm64) with GoReleaser.
+
+## License
+
+GPL-3.0. Free and open source: issues, pull requests and stars welcome.

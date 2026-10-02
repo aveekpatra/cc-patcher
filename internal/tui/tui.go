@@ -4,6 +4,8 @@ package tui
 
 import (
 	"fmt"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,6 +37,22 @@ const logo = `      _                 _
  | .__/ \__,_|\__\___|_| |_|\___|_|
  |_|`
 
+// RepoURL is where people star and contribute.
+const RepoURL = "https://github.com/aveekpatra/claude_patcher"
+
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Start()
+}
+
 // Section is one entry in the main menu.
 type Section struct {
 	Title   string
@@ -55,6 +73,7 @@ type model struct {
 	screen   screen
 	cursor   int
 	list     *list
+	status   string // one-off message shown in the footer
 	width    int
 	height   int
 }
@@ -97,6 +116,11 @@ func (m *model) updateHome(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch key {
 	case "q", "esc":
 		return m, tea.Quit
+	case "g":
+		m.status = "opening " + RepoURL
+		if err := openBrowser(RepoURL); err != nil {
+			m.status = "open " + RepoURL + " in your browser"
+		}
 	case "up", "k", "shift+tab":
 		m.cursor = (m.cursor + n - 1) % n
 	case "down", "j", "tab":
@@ -141,13 +165,21 @@ func (m *model) home() string {
 		lipgloss.JoinVertical(lipgloss.Left, menu...),
 	)
 	hints := mutedSt.Render("up/down or 1-" + fmt.Sprint(len(m.sections)) + " select   enter open   q quit")
-	ver := mutedSt.Render(m.version)
+	if m.status != "" {
+		hints = mutedSt.Render(m.status)
+	}
+	ver := mutedSt.Render("GPL-3.0, free and open source   ") +
+		selSt.Render("g") + mutedSt.Render(" star or contribute on GitHub   "+m.version)
 	if m.width == 0 {
 		return frame.Render(body + "\n\n" + hints)
 	}
-	top := lipgloss.Place(m.width, m.height-1, lipgloss.Center, lipgloss.Center, body)
-	gap := max(m.width-lipgloss.Width(hints)-lipgloss.Width(ver)-4, 1)
-	return top + "\n  " + hints + strings.Repeat(" ", gap) + ver
+	right := lipgloss.NewStyle().Width(m.width - 2).Align(lipgloss.Right)
+	if gap := m.width - lipgloss.Width(hints) - lipgloss.Width(ver) - 4; gap >= 3 {
+		top := lipgloss.Place(m.width, m.height-1, lipgloss.Center, lipgloss.Center, body)
+		return top + "\n  " + hints + strings.Repeat(" ", gap) + ver
+	}
+	top := lipgloss.Place(m.width, m.height-2, lipgloss.Center, lipgloss.Center, body)
+	return top + "\n" + right.Render(ver) + "\n  " + hints
 }
 
 func menuLine(selected bool, title, summary string, sumW int, key string) string {
