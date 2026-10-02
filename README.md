@@ -29,6 +29,16 @@ Each patch registers `cc-patcher hook <name>` in `settings.json`. Hook paths are
 | Git checkpoints | `checkpoint` | Snapshots the work tree at the end of each turn to `refs/claude-checkpoints/<session>` without touching your branch or index |
 | Compaction memory | `compact` | Before compaction saves recent requests, edited files, the todo list and a transcript copy; gives the summary back after |
 | Injection scan | `injection` | Warns Claude when web, shell or MCP output contains instructions aimed at it |
+| AGENTS.md fallback | `agentsmd` | Loads a project's AGENTS.md when it has no CLAUDE.md |
+| Auto-accept plans | `plan` | Approves plan mode's "ready to code?" prompt automatically |
+| Safe-command auto-approve | `autoapprove` | Approves read-only shell commands (ls, cat, grep, git status/log/diff...) without a prompt |
+| Sound alerts | `sound` | System sound when Claude finishes, needs you, or a tool fails |
+| tmux status | `tmux` | Prefixes the tmux window name with `[*]` working, `[?]` waiting, `[ok]` done |
+| Session replay | `replay` | Saves each finished session as HTML in `~/.claude/cc-patcher/replays` |
+| Skill drift lock | `skilllock` | Warns at session start when an installed skill was added, changed or removed |
+| Usage meter / Mood face / Session pet | `statusline` | Composable status line: context, 5h/7d limits with reset countdowns and cost; a face that follows what Claude is doing; a pet that grows with the session |
+| Keep tweakcc tweaks | `tweakcc` | Re-applies [tweakcc](https://github.com/Piebald-AI/tweakcc) customizations after Claude Code updates (needs Node) |
+| tweakcc studio | - | Opens tweakcc to edit system prompts, toolsets, subagent models and themes. Fragile: it patches Claude Code itself |
 | Phone alerts | `alerts` | [ntfy](https://ntfy.sh) push when Claude finishes or waits; Allow/Deny buttons for permission prompts |
 
 Verify checks are detected from `go.mod`, `Cargo.toml`, `package.json` scripts (`typecheck`, `lint`, `test`) and pytest. Override them per project in `.claude/cc-patcher.json`:
@@ -40,6 +50,14 @@ Verify checks are detected from `go.mod`, `Cargo.toml`, `package.json` scripts (
 Restore a checkpoint: `git for-each-ref refs/claude-checkpoints`, then `git checkout <ref> -- .`
 
 Phone alerts settings live in `~/.claude/cc-patcher/alerts.json` (topic, server, `approve_wait_seconds`, `notify_on_stop`). A permission prompt waits that many seconds for a phone answer before showing in the terminal; set it to 0 to turn remote approval off. Prompt text goes to the ntfy server, so use your own server for sensitive work.
+
+## Config presets
+
+Besides the CLAUDE.md blocks, the Config screen has presets that set several `settings.json` keys and env vars at once and restore the old values when turned off: unattended mode, lean context, compact earlier, 1-hour prompt cache, bigger tool output, fun UI pack, no AI attribution, privacy mode, sandbox with safe defaults, fuzzy @-file picker (`cc-patcher files`), request injector (`~/.claude/cc-patcher/request.json`), agent teams, forked subagents in `-p`, no nested subagents.
+
+## Remote skills
+
+Third-party skills are downloaded from GitHub when you install them, not bundled: Karpathy rules, thinking frameworks, avoid AI writing, visual explainer, codebase to course, second opinion (Codex). Uninstall only removes folders cc-patcher installed.
 
 ## Adding skills
 
