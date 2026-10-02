@@ -91,15 +91,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+	case launchDone:
+		if m.list != nil {
+			m.list.refresh()
+			if msg.err != nil {
+				m.list.status = append(m.list.status, badSt.Render(msg.err.Error()))
+			}
+		}
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
 		if m.screen == listScreen {
-			if m.list.update(msg) {
+			done, cmd := m.list.update(msg)
+			if done {
 				m.screen = homeScreen
 			}
-			return m, nil
+			return m, cmd
 		}
 		return m.updateHome(msg)
 	}

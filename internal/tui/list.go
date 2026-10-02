@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -34,12 +35,19 @@ func (l *list) refresh() {
 	}
 }
 
-// update handles a key and reports whether the screen should close.
-func (l *list) update(k tea.KeyMsg) bool {
+// launcher is a toggle that, when switched on, runs an interactive
+// program in the foreground instead of a plain Enable.
+type launcher interface{ Launch() *exec.Cmd }
+
+type launchDone struct{ err error }
+
+// update handles a key, reports whether the screen should close, and may
+// return a command to run.
+func (l *list) update(k tea.KeyMsg) (bool, tea.Cmd) {
 	n := len(l.items)
 	switch k.String() {
 	case "esc", "q", "left", "h":
-		return true
+		return true, nil
 	case "up", "k":
 		if n > 0 {
 			l.cursor = (l.cursor + n - 1) % n
@@ -61,19 +69,24 @@ func (l *list) update(k tea.KeyMsg) bool {
 			l.want[i] = !all
 		}
 	case "enter":
-		l.apply()
+		return false, l.apply()
 	}
-	return false
+	return false, nil
 }
 
-func (l *list) apply() {
+func (l *list) apply() tea.Cmd {
 	l.status = nil
 	on, off := 0, 0
+	var launch *exec.Cmd
 	for i, it := range l.items {
 		if l.want[i] == l.current[i] {
 			continue
 		}
 		var err error
+		if lr, ok := it.(launcher); ok && l.want[i] {
+			launch = lr.Launch()
+			continue
+		}
 		if l.want[i] {
 			err = it.Enable()
 		} else {
@@ -97,6 +110,10 @@ func (l *list) apply() {
 		l.status = append(l.status, goodSt.Render(fmt.Sprintf("enabled %d, disabled %d", on, off)))
 	}
 	l.refresh()
+	if launch != nil {
+		return tea.ExecProcess(launch, func(err error) tea.Msg { return launchDone{err} })
+	}
+	return nil
 }
 
 func (l *list) view(width, height int) string {

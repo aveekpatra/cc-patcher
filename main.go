@@ -56,11 +56,11 @@ func main() {
 		}},
 		{Title: "Patches", Summary: "change how the harness behaves", Items: func() []tui.Toggle {
 			all := patches.All()
-			out := make([]tui.Toggle, len(all))
+			out := make([]tui.Toggle, len(all), len(all)+1)
 			for i, p := range all {
 				out[i] = p
 			}
-			return out
+			return append(out, patches.TweakccStudio{})
 		}},
 	}
 	if err := tui.Run(version, sections); err != nil {
