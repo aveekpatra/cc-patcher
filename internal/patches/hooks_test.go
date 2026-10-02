@@ -163,3 +163,14 @@ func TestCompact(t *testing.T) {
 		}
 	}
 }
+
+func TestTimestampSubagent(t *testing.T) {
+	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
+	t0 := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
+	timestampHook(&Input{SessionID: "s", HookEventName: "SessionStart", Source: "startup"}, t0)
+	timestampHook(&Input{SessionID: "s", HookEventName: "SubagentStart", AgentID: "a1"}, t0.Add(10*time.Minute))
+	got := out(timestampHook(&Input{SessionID: "s", HookEventName: "PostToolUse", AgentID: "a1"}, t0.Add(25*time.Minute)))
+	if !strings.Contains(got, "subagent has been running 15m00s; main session running 25m00s") {
+		t.Fatal(got)
+	}
+}

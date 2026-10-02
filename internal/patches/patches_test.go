@@ -30,8 +30,11 @@ func TestEnableDisableKeepsOtherHooks(t *testing.T) {
 		t.Fatal("not enabled after install")
 	}
 	b, _ := os.ReadFile(claude.SettingsPath())
-	if n := strings.Count(string(b), " hook timestamp"); n != 2 {
-		t.Fatalf("want 2 hook entries, got %d:\n%s", n, b)
+	if n := strings.Count(string(b), " hook timestamp"); n != 4 {
+		t.Fatalf("want 4 hook entries, got %d:\n%s", n, b)
+	}
+	if !claude.HasBlock(claude.ClaudeMdPath(), "clock") {
+		t.Fatal("CLAUDE.md clock note missing")
 	}
 	if err := p.Disable(); err != nil {
 		t.Fatal(err)
@@ -40,6 +43,9 @@ func TestEnableDisableKeepsOtherHooks(t *testing.T) {
 	hooks := s["hooks"].(map[string]any)
 	if len(hooks) != 1 || s["theme"] != "dark" || !strings.Contains(mustRead(t), "echo hi") {
 		t.Fatalf("other settings lost: %v", s)
+	}
+	if claude.HasBlock(claude.ClaudeMdPath(), "clock") {
+		t.Fatal("CLAUDE.md clock note left behind")
 	}
 }
 

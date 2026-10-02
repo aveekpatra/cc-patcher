@@ -23,10 +23,11 @@ type reg struct {
 type Patch struct {
 	name, desc string
 	// hookArg is passed as `claude_patcher hook <hookArg>`.
-	hookArg string
-	regs    []reg
-	setup   func() error  // optional, runs before enabling
-	note    func() string // optional, shown after enabling
+	hookArg  string
+	regs     []reg
+	setup    func() error  // optional, runs before enabling
+	teardown func() error  // optional, runs after disabling
+	note     func() string // optional, shown after enabling
 }
 
 func (p *Patch) Name() string        { return p.name }
@@ -97,6 +98,11 @@ func (p *Patch) Enable() error {
 }
 
 func (p *Patch) Disable() error {
+	if p.teardown != nil {
+		if err := p.teardown(); err != nil {
+			return err
+		}
+	}
 	return claude.Update(func(s claude.Settings) {
 		hooks := removeHooks(s, p.marker())
 		if len(hooks) == 0 {
@@ -172,8 +178,13 @@ func All() []*Patch {
 	return []*Patch{
 		{
 			name: "Time awareness", hookArg: "timestamp",
-			desc: "Adds the current time and elapsed time to every prompt and tool call",
-			regs: []reg{{"UserPromptSubmit", "", 5, false}, {"PostToolUse", "*", 5, false}},
+			desc: "Adds the time and elapsed time to sessions, subagents, prompts and tool calls; explains it in CLAUDE.md",
+			regs: []reg{
+				{"SessionStart", "", 5, false}, {"SubagentStart", "", 5, false},
+				{"UserPromptSubmit", "", 5, false}, {"PostToolUse", "*", 5, false},
+			},
+			setup:    func() error { return claude.SetBlock(claude.ClaudeMdPath(), "clock", clockNote) },
+			teardown: func() error { return claude.RemoveBlock(claude.ClaudeMdPath(), "clock") },
 		},
 		{
 			name: "Command guard", hookArg: "guard",

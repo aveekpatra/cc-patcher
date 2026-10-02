@@ -23,6 +23,8 @@ type Input struct {
 	TranscriptPath       string          `json:"transcript_path"`
 	Cwd                  string          `json:"cwd"`
 	HookEventName        string          `json:"hook_event_name"`
+	AgentID              string          `json:"agent_id"`
+	AgentType            string          `json:"agent_type"`
 	ToolName             string          `json:"tool_name"`
 	ToolInput            map[string]any  `json:"tool_input"`
 	ToolResponse         json.RawMessage `json:"tool_response"`
