@@ -54,3 +54,26 @@ func TestFlow(t *testing.T) {
 		t.Fatal("esc did not return to menu")
 	}
 }
+
+func TestFilter(t *testing.T) {
+	var items []Toggle
+	for _, n := range []string{"alpha", "beta", "gamma", "alphabet"} {
+		items = append(items, &fake{name: n})
+	}
+	l := newList("Skills", items)
+	for _, k := range []string{"/", "a", "l", "p", "enter", "a", "enter"} {
+		l.update(key(k))
+	}
+	v := l.view(80, 20)
+	t.Log("\n" + v)
+	if len(l.visible) != 2 || !items[0].Enabled() || !items[3].Enabled() || items[1].Enabled() {
+		t.Fatalf("filter+all wrong: visible=%v", l.visible)
+	}
+	if lines := strings.Split(v, "\n"); len(lines) != 20 || !strings.Contains(lines[19], "/ filter") {
+		t.Fatalf("hints not pinned to bottom: %d lines", len(lines))
+	}
+	l.update(key("esc"))
+	if len(l.visible) != 4 {
+		t.Fatal("esc did not clear filter")
+	}
+}

@@ -15,9 +15,12 @@ type list struct {
 	items   []Toggle
 	current []bool // what is installed right now
 	want    []bool // what the user has checked
-	cursor  int
+	cursor  int    // index into visible
 	offset  int
 	status  []string
+	filter  string
+	typing  bool  // keys go to the filter
+	visible []int // indices of items matching filter
 }
 
 func newList(title string, items []Toggle) *list {
@@ -33,6 +36,27 @@ func (l *list) refresh() {
 		l.current[i] = it.Enabled()
 		l.want[i] = l.current[i]
 	}
+	l.applyFilter()
+}
+
+// applyFilter keeps items whose name or description contains every word
+// of the filter, ignoring case.
+func (l *list) applyFilter() {
+	words := strings.Fields(strings.ToLower(l.filter))
+	l.visible = l.visible[:0]
+	for i, it := range l.items {
+		text := strings.ToLower(it.Name() + " " + it.Description())
+		ok := true
+		for _, w := range words {
+			ok = ok && strings.Contains(text, w)
+		}
+		if ok {
+			l.visible = append(l.visible, i)
+		}
+	}
+	if l.cursor >= len(l.visible) {
+		l.cursor = max(len(l.visible)-1, 0)
+	}
 }
 
 // launcher is a toggle that, when switched on, runs an interactive
@@ -44,9 +68,40 @@ type launchDone struct{ err error }
 // update handles a key, reports whether the screen should close, and may
 // return a command to run.
 func (l *list) update(k tea.KeyMsg) (bool, tea.Cmd) {
-	n := len(l.items)
-	switch k.String() {
-	case "esc", "q", "left", "h":
+	key := k.String()
+	if l.typing {
+		switch key {
+		case "esc":
+			l.typing, l.filter = false, ""
+		case "enter", "down", "up", "tab":
+			l.typing = false
+		case "backspace":
+			if r := []rune(l.filter); len(r) > 0 {
+				l.filter = string(r[:len(r)-1])
+			}
+		default:
+			if k.Type == tea.KeyRunes || k.Type == tea.KeySpace {
+				l.filter += string(k.Runes)
+			}
+		}
+		l.applyFilter()
+		if key != "down" && key != "up" {
+			return false, nil
+		}
+	}
+
+	n := len(l.visible)
+	switch key {
+	case "/":
+		l.typing = true
+	case "esc":
+		if l.filter != "" {
+			l.filter = ""
+			l.applyFilter()
+			return false, nil
+		}
+		return true, nil
+	case "q", "left", "h":
 		return true, nil
 	case "up", "k":
 		if n > 0 {
@@ -58,14 +113,15 @@ func (l *list) update(k tea.KeyMsg) (bool, tea.Cmd) {
 		}
 	case " ", "x":
 		if n > 0 {
-			l.want[l.cursor] = !l.want[l.cursor]
+			i := l.visible[l.cursor]
+			l.want[i] = !l.want[i]
 		}
 	case "a":
 		all := true
-		for _, w := range l.want {
-			all = all && w
+		for _, i := range l.visible {
+			all = all && l.want[i]
 		}
-		for i := range l.want {
+		for _, i := range l.visible {
 			l.want[i] = !all
 		}
 	case "enter":
@@ -116,25 +172,59 @@ func (l *list) apply() tea.Cmd {
 	return nil
 }
 
+// view draws the list with the filter line on top and status and key
+// hints pinned to the bottom, like the home screen.
 func (l *list) view(width, height int) string {
-	var b strings.Builder
-	b.WriteString(titleSt.Render(l.title) + "\n\n")
-	if len(l.items) == 0 {
-		b.WriteString(mutedSt.Render("nothing here yet") + "\n")
+	var top []string
+	enabled := 0
+	for _, c := range l.current {
+		if c {
+			enabled++
+		}
 	}
+	top = append(top, titleSt.Render(l.title)+mutedSt.Render(fmt.Sprintf("  %d of %d on", enabled, len(l.items))))
+	switch {
+	case l.typing:
+		top = append(top, "/ "+l.filter+selSt.Render("_"))
+	case l.filter != "":
+		top = append(top, mutedSt.Render("/ "+l.filter+fmt.Sprintf("  (%d match)", len(l.visible))))
+	default:
+		top = append(top, "")
+	}
+	top = append(top, "")
 
-	rows := max(height-8-len(l.status), 3)
+	var bottom []string
+	bottom = append(bottom, l.status...)
+	hints := "space toggle   a all   / filter   enter apply   esc back   * pending"
+	if l.typing {
+		hints = "type to filter   enter done   esc clear"
+	}
+	bottom = append(bottom, mutedSt.Render(hints))
+
+	rows := max(height-len(top)-len(bottom)-1, 3)
 	if l.cursor < l.offset {
 		l.offset = l.cursor
 	}
 	if l.cursor >= l.offset+rows {
 		l.offset = l.cursor - rows + 1
 	}
+	if l.offset > max(len(l.visible)-rows, 0) {
+		l.offset = max(len(l.visible)-rows, 0)
+	}
 	nameW := 0
 	for _, it := range l.items {
 		nameW = max(nameW, len(it.Name()))
 	}
-	for i := l.offset; i < len(l.items) && i < l.offset+rows; i++ {
+	var mid []string
+	if len(l.visible) == 0 {
+		msg := "nothing here yet"
+		if l.filter != "" {
+			msg = "no match for " + l.filter
+		}
+		mid = append(mid, mutedSt.Render(msg))
+	}
+	for vi := l.offset; vi < len(l.visible) && vi < l.offset+rows; vi++ {
+		i := l.visible[vi]
 		it := l.items[i]
 		box := "[ ]"
 		if l.want[i] {
@@ -146,22 +236,22 @@ func (l *list) view(width, height int) string {
 		}
 		cur := "  "
 		name := fmt.Sprintf("%-*s", nameW, it.Name())
-		if i == l.cursor {
+		if vi == l.cursor && !l.typing {
 			cur, box, name = "> ", selSt.Render(box), selSt.Render(name)
 		}
 		line := cur + box + mark + " " + name
 		if room := width - nameW - 10; room > 10 {
 			line += "  " + mutedSt.Render(truncate(it.Description(), room))
 		}
-		b.WriteString(line + "\n")
+		mid = append(mid, line)
+	}
+	if more := len(l.visible) - (l.offset + rows); more > 0 {
+		mid = append(mid, mutedSt.Render(fmt.Sprintf("  ... %d more", more)))
 	}
 
-	b.WriteString("\n")
-	for _, s := range l.status {
-		b.WriteString(s + "\n")
-	}
-	b.WriteString(mutedSt.Render("space toggle  a all  enter apply  esc back  (* = pending)"))
-	return b.String()
+	gap := max(height-len(top)-len(mid)-len(bottom)+1, 1)
+	return strings.Join(top, "\n") + "\n" + strings.Join(mid, "\n") +
+		strings.Repeat("\n", gap) + strings.Join(bottom, "\n")
 }
 
 func truncate(s string, n int) string {
