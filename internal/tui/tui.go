@@ -5,7 +5,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -46,8 +45,7 @@ type Section struct {
 type screen int
 
 const (
-	splashScreen screen = iota
-	menuScreen
+	homeScreen screen = iota
 	listScreen
 )
 
@@ -61,8 +59,6 @@ type model struct {
 	height   int
 }
 
-type splashDone struct{}
-
 // Run starts the TUI.
 func Run(version string, sections []Section) error {
 	m := &model{version: version, sections: sections}
@@ -70,46 +66,40 @@ func Run(version string, sections []Section) error {
 	return err
 }
 
-func (m *model) Init() tea.Cmd {
-	return tea.Tick(1800*time.Millisecond, func(time.Time) tea.Msg { return splashDone{} })
-}
+func (m *model) Init() tea.Cmd { return nil }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		return m, nil
-	case splashDone:
-		if m.screen == splashScreen {
-			m.screen = menuScreen
-		}
-		return m, nil
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
-		switch m.screen {
-		case splashScreen:
-			m.screen = menuScreen
-		case menuScreen:
-			return m.updateMenu(msg)
-		case listScreen:
+		if m.screen == listScreen {
 			if m.list.update(msg) {
-				m.screen = menuScreen
+				m.screen = homeScreen
 			}
+			return m, nil
 		}
+		return m.updateHome(msg)
 	}
 	return m, nil
 }
 
-func (m *model) updateMenu(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m *model) updateHome(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	n := len(m.sections) + 1 // last entry is Quit
-	switch k.String() {
+	key := k.String()
+	if i := int(key[0] - '1'); len(key) == 1 && i >= 0 && i < len(m.sections) {
+		m.cursor = i
+		key = "enter"
+	}
+	switch key {
 	case "q", "esc":
 		return m, tea.Quit
-	case "up", "k":
+	case "up", "k", "shift+tab":
 		m.cursor = (m.cursor + n - 1) % n
-	case "down", "j":
+	case "down", "j", "tab":
 		m.cursor = (m.cursor + 1) % n
 	case "enter", " ", "right", "l":
 		if m.cursor == len(m.sections) {
@@ -123,39 +113,49 @@ func (m *model) updateMenu(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
-	switch m.screen {
-	case splashScreen:
-		return m.center(titleSt.Render(logo) + "\n\n" +
-			mutedSt.Render("Claude Code skills, config and harness patches  "+m.version) + "\n\n" +
-			mutedSt.Render("press any key"))
-	case listScreen:
+	if m.screen == listScreen {
 		return frame.Render(m.list.view(m.width-4, m.height-2))
 	}
-	var b strings.Builder
-	b.WriteString(titleSt.Render("claude_patcher") + mutedSt.Render("  "+m.version) + "\n\n")
+	return m.home()
+}
+
+// home is the start screen: logo and menu stacked in the middle, key hints
+// pinned to the bottom. Its height never changes, so nothing moves.
+func (m *model) home() string {
+	sumW := 0
+	for _, s := range m.sections {
+		sumW = max(sumW, len(s.Summary))
+	}
+	var menu []string
 	for i, s := range m.sections {
-		b.WriteString(menuLine(i == m.cursor, s.Title, s.Summary))
+		menu = append(menu, menuLine(i == m.cursor, s.Title, s.Summary, sumW, fmt.Sprint(i+1)))
 	}
-	b.WriteString(menuLine(m.cursor == len(m.sections), "Quit", ""))
-	b.WriteString("\n" + mutedSt.Render("up/down move  enter open  q quit"))
-	return frame.Render(b.String())
-}
+	menu = append(menu, menuLine(m.cursor == len(m.sections), "Quit", "", sumW, "q"))
 
-func menuLine(selected bool, title, summary string) string {
-	cur, st := "  ", lipgloss.NewStyle()
-	if selected {
-		cur, st = "> ", selSt
-	}
-	line := cur + st.Render(fmt.Sprintf("%-10s", title))
-	if summary != "" {
-		line += "  " + mutedSt.Render(summary)
-	}
-	return line + "\n"
-}
-
-func (m *model) center(s string) string {
+	body := lipgloss.JoinVertical(lipgloss.Center,
+		titleSt.Render(logo),
+		"",
+		mutedSt.Render("skills, config and harness patches for Claude Code"),
+		"",
+		"",
+		lipgloss.JoinVertical(lipgloss.Left, menu...),
+	)
+	hints := mutedSt.Render("up/down or 1-" + fmt.Sprint(len(m.sections)) + " select   enter open   q quit")
+	ver := mutedSt.Render(m.version)
 	if m.width == 0 {
-		return frame.Render(s)
+		return frame.Render(body + "\n\n" + hints)
 	}
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, s)
+	top := lipgloss.Place(m.width, m.height-1, lipgloss.Center, lipgloss.Center, body)
+	gap := max(m.width-lipgloss.Width(hints)-lipgloss.Width(ver)-4, 1)
+	return top + "\n  " + hints + strings.Repeat(" ", gap) + ver
+}
+
+func menuLine(selected bool, title, summary string, sumW int, key string) string {
+	st, sum := lipgloss.NewStyle(), mutedSt
+	cur := "  "
+	if selected {
+		st, cur = selSt, selSt.Render("> ")
+	}
+	return cur + st.Render(fmt.Sprintf("%-9s", title)) + "  " +
+		sum.Render(fmt.Sprintf("%-*s", sumW, summary)) + "   " + mutedSt.Render(key)
 }

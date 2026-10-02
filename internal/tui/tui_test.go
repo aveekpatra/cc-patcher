@@ -34,10 +34,11 @@ func TestFlow(t *testing.T) {
 	a, b := &fake{name: "alpha"}, &fake{name: "beta", on: true}
 	m := &model{version: "test", sections: []Section{{Title: "Skills", Items: func() []Toggle { return []Toggle{a, b} }}}}
 	m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
-	if !strings.Contains(m.View(), "press any key") {
-		t.Fatal("no splash")
+	if !strings.Contains(m.View(), "Skills") || !strings.Contains(m.View(), "|_|") {
+		t.Fatal("home lacks logo or menu")
 	}
-	for _, k := range []string{"x", "enter", " ", "j", " ", "enter"} {
+	t.Log("\n" + m.View())
+	for _, k := range []string{"enter", " ", "j", " ", "enter"} {
 		m.Update(key(k))
 	}
 	v := m.View()
@@ -49,7 +50,7 @@ func TestFlow(t *testing.T) {
 		t.Fatal("missing status")
 	}
 	m.Update(key("esc"))
-	if m.screen != menuScreen {
+	if m.screen != homeScreen {
 		t.Fatal("esc did not return to menu")
 	}
 }
