@@ -204,10 +204,17 @@ func (l *list) view(width, height int) string {
 	var bottom []string
 	bottom = append(bottom, l.status...)
 	hints := "space toggle   i details   a all   / filter   enter apply   esc back   * pending"
+	legend := ""
+	for _, i := range l.visible {
+		if warning(l.items[i]) != "" && !l.typing {
+			legend = "   " + warnSt.Render("!") + mutedSt.Render(" changes Claude Code's own files")
+			break
+		}
+	}
 	if l.typing {
 		hints = "type to filter   enter done   esc clear"
 	}
-	bottom = append(bottom, mutedSt.Render(hints))
+	bottom = append(bottom, mutedSt.Render(hints)+legend)
 
 	var info []string
 	if l.expand && len(l.visible) > 0 {
@@ -251,8 +258,12 @@ func (l *list) view(width, height int) string {
 		if vi == l.cursor && !l.typing {
 			cur, box, name = "> ", selSt.Render(box), selSt.Render(name)
 		}
-		line := cur + box + mark + " " + name
-		if room := width - nameW - 10; room > 10 && !(l.expand && vi == l.cursor) {
+		badge := "  "
+		if warning(it) != "" {
+			badge = warnSt.Render("!") + " "
+		}
+		line := cur + box + mark + " " + badge + name
+		if room := width - nameW - 12; room > 10 && !(l.expand && vi == l.cursor) {
 			line += "  " + mutedSt.Render(truncate(it.Description(), room))
 		}
 		mid = append(mid, line)
@@ -280,11 +291,23 @@ func (l *list) details(it Toggle, width int) []string {
 			out = append(out, "      "+st.Render(strings.TrimRight(line, " ")))
 		}
 	}
+	if w := warning(it); w != "" {
+		add("! "+w, warnSt)
+	}
 	add(it.Description(), lipgloss.NewStyle())
 	if d, ok := it.(interface{ Details() string }); ok && d.Details() != "" {
 		add(d.Details(), mutedSt)
 	}
 	return append(out, "")
+}
+
+// warning returns an item's caution text, if it has one. Items that
+// change Claude Code's own files (tweakcc) carry one.
+func warning(it Toggle) string {
+	if w, ok := it.(interface{ Warning() string }); ok {
+		return w.Warning()
+	}
+	return ""
 }
 
 func truncate(s string, n int) string {

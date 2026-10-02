@@ -24,6 +24,7 @@ func init() {
 		name: "Keep tweakcc tweaks", hookArg: "tweakcc",
 		desc: "Re-applies your tweakcc customizations whenever Claude Code updates, before your next launch (needs Node)",
 		regs: []reg{{"SessionStart", "startup", 300, true}, {"Stop", "", 300, true}},
+		warn: tweakccWarning,
 		setup: func() error {
 			if _, err := exec.LookPath("npx"); err != nil {
 				return errors.New("needs Node.js (npx) on PATH")
@@ -41,8 +42,13 @@ type TweakccStudio struct{}
 
 func (TweakccStudio) Name() string { return "tweakcc studio" }
 func (TweakccStudio) Description() string {
-	return "Opens tweakcc: edit system prompts, toolsets, subagent models, themes (FRAGILE: patches Claude Code itself)"
+	return "Opens tweakcc: edit system prompts, toolsets, subagent models and themes"
 }
+
+func (TweakccStudio) Warning() string { return tweakccWarning }
+
+const tweakccWarning = "Uses tweakcc, which rewrites Claude Code's own program files. Needs Node; Claude Code updates undo it unless Keep tweakcc tweaks is on; run npx tweakcc --restore to undo by hand."
+
 func (TweakccStudio) Enabled() bool {
 	home, _ := os.UserHomeDir()
 	return fileExists(filepath.Join(home, ".tweakcc", "config.json"))

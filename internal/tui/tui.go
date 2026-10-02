@@ -22,6 +22,7 @@ var (
 	selSt   = lipgloss.NewStyle().Bold(true).Foreground(accent)
 	goodSt  = lipgloss.NewStyle().Foreground(good)
 	badSt   = lipgloss.NewStyle().Foreground(bad)
+	warnSt  = lipgloss.NewStyle().Foreground(bad).Bold(true)
 	frame   = lipgloss.NewStyle().Padding(1, 2)
 )
 

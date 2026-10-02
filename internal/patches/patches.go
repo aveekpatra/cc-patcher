@@ -25,6 +25,7 @@ type Patch struct {
 	// hookArg is passed as `cc-patcher hook <hookArg>`.
 	hookArg  string
 	regs     []reg
+	warn     string        // optional caution shown with a red badge
 	setup    func() error  // optional, runs before enabling
 	teardown func() error  // optional, runs after disabling
 	note     func() string // optional, shown after enabling
@@ -36,6 +37,7 @@ type Patch struct {
 
 func (p *Patch) Name() string        { return p.name }
 func (p *Patch) Description() string { return p.desc }
+func (p *Patch) Warning() string     { return p.warn }
 
 // Details lists the hooks the patch registers.
 func (p *Patch) Details() string {
