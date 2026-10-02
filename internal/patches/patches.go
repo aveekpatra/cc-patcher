@@ -28,6 +28,10 @@ type Patch struct {
 	setup    func() error  // optional, runs before enabling
 	teardown func() error  // optional, runs after disabling
 	note     func() string // optional, shown after enabling
+	// Optional overrides for patches that do not use hooks (status line).
+	enabled func() bool
+	enable  func() error
+	disable func() error
 }
 
 func (p *Patch) Name() string        { return p.name }
@@ -44,7 +48,10 @@ func (p *Patch) Note() string {
 // marker identifies hook commands owned by this patch.
 func (p *Patch) marker() string { return " hook " + p.hookArg }
 
-func (p *Patch) command() string {
+func (p *Patch) command() string { return `"` + exePath() + `"` + p.marker() }
+
+// exePath is this binary's resolved path, with forward slashes on Windows.
+func exePath() string {
 	exe, err := os.Executable()
 	if err == nil {
 		if r, err := filepath.EvalSymlinks(exe); err == nil {
@@ -56,10 +63,13 @@ func (p *Patch) command() string {
 	if runtime.GOOS == "windows" {
 		exe = filepath.ToSlash(exe)
 	}
-	return `"` + exe + `"` + p.marker()
+	return exe
 }
 
 func (p *Patch) Enabled() bool {
+	if p.enabled != nil {
+		return p.enabled()
+	}
 	s, err := claude.LoadSettings()
 	if err != nil {
 		return false
@@ -78,6 +88,9 @@ func (p *Patch) Enable() error {
 		if err := p.setup(); err != nil {
 			return err
 		}
+	}
+	if p.enable != nil {
+		return p.enable()
 	}
 	return claude.Update(func(s claude.Settings) {
 		hooks := removeHooks(s, p.marker())
@@ -102,6 +115,9 @@ func (p *Patch) Disable() error {
 		if err := p.teardown(); err != nil {
 			return err
 		}
+	}
+	if p.disable != nil {
+		return p.disable()
 	}
 	return claude.Update(func(s claude.Settings) {
 		hooks := removeHooks(s, p.marker())
@@ -171,11 +187,14 @@ func removeHooks(s claude.Settings, marker string) map[string]any {
 	return hooks
 }
 
+// extraPatches are added to All by init functions in other files.
+var extraPatches []*Patch
+
 const editTools = "Edit|Write|MultiEdit|NotebookEdit"
 
 // All returns every available patch.
 func All() []*Patch {
-	return []*Patch{
+	return append([]*Patch{
 		{
 			name: "Time awareness", hookArg: "timestamp",
 			desc: "Adds the time and elapsed time to sessions, subagents, prompts and tool calls; explains it in CLAUDE.md",
@@ -232,5 +251,5 @@ func All() []*Patch {
 			regs:  []reg{{"Stop", "", 15, true}, {"Notification", "", 15, true}, {"PermissionRequest", "", 120, false}},
 			setup: setupAlerts, note: alertsNote,
 		},
-	}
+	}, extraPatches...)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/aveekpatra/cc-patcher/internal/config"
 	"github.com/aveekpatra/cc-patcher/internal/patches"
 	"github.com/aveekpatra/cc-patcher/internal/skills"
+	"github.com/aveekpatra/cc-patcher/internal/statusline"
 	"github.com/aveekpatra/cc-patcher/internal/tui"
 )
 
@@ -24,6 +25,11 @@ func main() {
 		case "hook":
 			if len(os.Args) > 2 {
 				patches.RunHook(os.Args[2], os.Stdin, os.Stdout)
+			}
+			return
+		case "statusline":
+			if len(os.Args) > 2 {
+				statusline.Run(os.Args[2], os.Stdin, os.Stdout)
 			}
 			return
 		case "version", "--version", "-v":
