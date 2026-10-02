@@ -10,6 +10,7 @@ import (
 	"github.com/aveekpatra/cc-patcher/internal/files"
 	"github.com/aveekpatra/cc-patcher/internal/patches"
 	"github.com/aveekpatra/cc-patcher/internal/skills"
+	"github.com/aveekpatra/cc-patcher/internal/statusline"
 	"github.com/aveekpatra/cc-patcher/internal/tui"
 )
 
@@ -29,6 +30,11 @@ func main() {
 			return
 		case "files":
 			files.Run(os.Stdin, os.Stdout)
+			return
+		case "statusline":
+			if len(os.Args) > 2 {
+				statusline.Run(os.Args[2], os.Stdin, os.Stdout)
+			}
 			return
 		case "version", "--version", "-v":
 			fmt.Println(version)
