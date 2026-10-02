@@ -26,7 +26,7 @@ type list struct {
 }
 
 func newList(title string, items []Toggle) *list {
-	l := &list{title: title, items: items}
+	l := &list{title: title, items: items, expand: true}
 	l.refresh()
 	return l
 }

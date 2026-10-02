@@ -81,7 +81,6 @@ func TestFilter(t *testing.T) {
 func TestDetails(t *testing.T) {
 	long := &fake{name: "long"}
 	l := newList("Patches", []Toggle{long, &fake{name: "b"}})
-	l.update(key("i"))
 	v := l.view(50, 20)
 	t.Log("\n" + v)
 	if !strings.Contains(v, "      desc of long") {
