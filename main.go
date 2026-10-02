@@ -40,9 +40,12 @@ func main() {
 	sections := []tui.Section{
 		{Title: "Skills", Summary: "install or remove bundled skills", Items: func() []tui.Toggle {
 			all, _ := skills.List(skillsFS)
-			out := make([]tui.Toggle, len(all))
-			for i, s := range all {
-				out[i] = s
+			out := make([]tui.Toggle, 0, len(all))
+			for _, s := range all {
+				out = append(out, s)
+			}
+			for _, r := range skills.RemoteList() {
+				out = append(out, r)
 			}
 			return out
 		}},
