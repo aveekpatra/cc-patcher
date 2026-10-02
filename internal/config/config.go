@@ -6,8 +6,8 @@ import (
 	"io/fs"
 	"reflect"
 
-	"github.com/aveekpatra/claude_patcher/internal/claude"
-	"github.com/aveekpatra/claude_patcher/internal/skills"
+	"github.com/aveekpatra/cc-patcher/internal/claude"
+	"github.com/aveekpatra/cc-patcher/internal/skills"
 )
 
 // Option is a config toggle backed by a pair of enable/disable functions.

@@ -46,11 +46,11 @@ func verifyHook(in *Input, _ time.Time) any {
 		st.Attempts++
 		if st.Attempts > verifyMaxAttempts {
 			saveState("verify", in.SessionID, verifyState{})
-			return tellUser(fmt.Sprintf("claude_patcher verify: `%s` still fails after %d attempts; letting Claude stop.", c, verifyMaxAttempts))
+			return tellUser(fmt.Sprintf("cc-patcher verify: `%s` still fails after %d attempts; letting Claude stop.", c, verifyMaxAttempts))
 		}
 		saveState("verify", in.SessionID, st)
 		return block(fmt.Sprintf(
-			"claude_patcher verify (attempt %d/%d): `%s` failed.\n\n%s\n\nFix the failure before finishing. If it cannot be fixed or is unrelated to your change, say so plainly to the user.",
+			"cc-patcher verify (attempt %d/%d): `%s` failed.\n\n%s\n\nFix the failure before finishing. If it cannot be fixed or is unrelated to your change, say so plainly to the user.",
 			st.Attempts, verifyMaxAttempts, c, tail(out, 60)))
 	}
 	saveState("verify", in.SessionID, verifyState{})

@@ -99,7 +99,7 @@ func TestVerify(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	dir := t.TempDir()
 	os.MkdirAll(filepath.Join(dir, ".claude"), 0o755)
-	os.WriteFile(filepath.Join(dir, ".claude", "claude_patcher.json"), []byte(`{"verify":["exit 1"]}`), 0o644)
+	os.WriteFile(filepath.Join(dir, ".claude", "cc-patcher.json"), []byte(`{"verify":["exit 1"]}`), 0o644)
 	stop := &Input{SessionID: "v", Cwd: dir, HookEventName: "Stop"}
 	if verifyHook(stop, time.Now()) != nil {
 		t.Fatal("blocked without edits")

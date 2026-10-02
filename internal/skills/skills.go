@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aveekpatra/claude_patcher/internal/claude"
+	"github.com/aveekpatra/cc-patcher/internal/claude"
 )
 
 // Skill is one bundled skill directory.

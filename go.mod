@@ -1,4 +1,4 @@
-module github.com/aveekpatra/claude_patcher
+module github.com/aveekpatra/cc-patcher
 
 go 1.26.5
 

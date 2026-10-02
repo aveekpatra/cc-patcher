@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aveekpatra/claude_patcher/internal/claude"
+	"github.com/aveekpatra/cc-patcher/internal/claude"
 )
 
 func TestEnableDisableKeepsOtherHooks(t *testing.T) {

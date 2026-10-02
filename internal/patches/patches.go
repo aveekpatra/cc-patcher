@@ -1,5 +1,5 @@
 // Package patches changes how the Claude Code harness behaves by
-// registering claude_patcher itself as a hook command.
+// registering cc-patcher itself as a hook command.
 package patches
 
 import (
@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/aveekpatra/claude_patcher/internal/claude"
+	"github.com/aveekpatra/cc-patcher/internal/claude"
 )
 
 // reg is one hook registration in settings.json.
@@ -22,7 +22,7 @@ type reg struct {
 // Patch is one harness change.
 type Patch struct {
 	name, desc string
-	// hookArg is passed as `claude_patcher hook <hookArg>`.
+	// hookArg is passed as `cc-patcher hook <hookArg>`.
 	hookArg  string
 	regs     []reg
 	setup    func() error  // optional, runs before enabling
@@ -51,7 +51,7 @@ func (p *Patch) command() string {
 			exe = r
 		}
 	} else {
-		exe = "claude_patcher"
+		exe = "cc-patcher"
 	}
 	if runtime.GOOS == "windows" {
 		exe = filepath.ToSlash(exe)

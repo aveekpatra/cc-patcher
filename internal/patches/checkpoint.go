@@ -35,7 +35,7 @@ func checkpointHook(in *Input, now time.Time) any {
 		return nil
 	}
 
-	tmp, err := os.CreateTemp("", "claude_patcher-index-*")
+	tmp, err := os.CreateTemp("", "cc-patcher-index-*")
 	if err != nil {
 		return nil
 	}
@@ -80,8 +80,8 @@ func checkpointHook(in *Input, now time.Time) any {
 		args = append(args, "-p", prev)
 	}
 	commit, err := g([]string{
-		"GIT_AUTHOR_NAME=claude_patcher", "GIT_AUTHOR_EMAIL=claude_patcher@localhost",
-		"GIT_COMMITTER_NAME=claude_patcher", "GIT_COMMITTER_EMAIL=claude_patcher@localhost",
+		"GIT_AUTHOR_NAME=cc-patcher", "GIT_AUTHOR_EMAIL=cc-patcher@localhost",
+		"GIT_COMMITTER_NAME=cc-patcher", "GIT_COMMITTER_EMAIL=cc-patcher@localhost",
 	}, args...)
 	if err != nil {
 		return nil

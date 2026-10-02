@@ -14,11 +14,11 @@ func guardHook(in *Input, _ time.Time) any {
 	case "Bash":
 		decision, reason := checkCommand(in.str("command"))
 		if decision != "" {
-			return toolDecision(decision, "claude_patcher guard: "+reason)
+			return toolDecision(decision, "cc-patcher guard: "+reason)
 		}
 	case "Read", "Edit", "Write", "MultiEdit":
 		if isEnvFile(in.str("file_path")) {
-			return toolDecision("deny", "claude_patcher guard: .env files hold secrets; ask the user for the value you need")
+			return toolDecision("deny", "cc-patcher guard: .env files hold secrets; ask the user for the value you need")
 		}
 	}
 	return nil

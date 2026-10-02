@@ -55,10 +55,10 @@ func contextHook(in *Input, _ time.Time) any {
 		used/1000, window/1000, pct, advice))
 }
 
-// contextWindow returns $CLAUDE_PATCHER_CONTEXT_WINDOW, or 1M once usage
+// contextWindow returns $CC_PATCHER_CONTEXT_WINDOW, or 1M once usage
 // has passed 200k (only 1M models get there), else 200k.
 func contextWindow(used int) int {
-	if n, err := strconv.Atoi(os.Getenv("CLAUDE_PATCHER_CONTEXT_WINDOW")); err == nil && n > 0 {
+	if n, err := strconv.Atoi(os.Getenv("CC_PATCHER_CONTEXT_WINDOW")); err == nil && n > 0 {
 		return n
 	}
 	if used > 200_000 {

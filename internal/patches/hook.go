@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aveekpatra/claude_patcher/internal/claude"
+	"github.com/aveekpatra/cc-patcher/internal/claude"
 )
 
 // Input is the JSON Claude Code sends a hook on stdin. Only the fields our
@@ -57,7 +57,7 @@ var handlers = map[string]handler{
 	"alerts":     alertsHook,
 }
 
-// RunHook is the body of `claude_patcher hook <name>`. It never fails
+// RunHook is the body of `cc-patcher hook <name>`. It never fails
 // loudly: a broken hook must not block the agent.
 func RunHook(name string, stdin io.Reader, stdout io.Writer) {
 	h, ok := handlers[name]
@@ -178,14 +178,14 @@ func clip(s string, n int) string {
 	return string(r[:n-3]) + "..."
 }
 
-// projectConfig is the optional <project>/.claude/claude_patcher.json.
+// projectConfig is the optional <project>/.claude/cc-patcher.json.
 type projectConfig struct {
 	Verify []string `json:"verify"`
 }
 
 func loadProjectConfig(cwd string) projectConfig {
 	var c projectConfig
-	if b, err := os.ReadFile(filepath.Join(cwd, ".claude", "claude_patcher.json")); err == nil {
+	if b, err := os.ReadFile(filepath.Join(cwd, ".claude", "cc-patcher.json")); err == nil {
 		_ = json.Unmarshal(b, &c)
 	}
 	return c

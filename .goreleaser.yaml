@@ -1,5 +1,5 @@
 version: 2
-project_name: claude_patcher
+project_name: cc-patcher
 builds:
   - env: [CGO_ENABLED=0]
     goos: [darwin, linux, windows]

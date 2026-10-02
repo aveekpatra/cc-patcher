@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aveekpatra/claude_patcher/internal/claude"
+	"github.com/aveekpatra/cc-patcher/internal/claude"
 )
 
 // compactHook saves a summary and a copy of the transcript before

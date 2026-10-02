@@ -25,20 +25,20 @@ var (
 	frame   = lipgloss.NewStyle().Padding(1, 2)
 )
 
-const logo = `      _                 _
-  ___| | __ _ _   _  __| | ___
- / __| |/ _' | | | |/ _' |/ _ \
-| (__| | (_| | |_| | (_| |  __/
- \___|_|\__,_|\__,_|\__,_|\___|
-              _       _
-  _ __   __ _| |_ ___| |__   ___ _ __
- | '_ \ / _' | __/ __| '_ \ / _ \ '__|
- | |_) | (_| | || (__| | | |  __/ |
- | .__/ \__,_|\__\___|_| |_|\___|_|
- |_|`
+const logo = `      _                 _                        _
+  ___| | __ _ _   _  __| | ___     ___ ___   __| | ___
+ / __| |/ _' | | | |/ _' |/ _ \   / __/ _ \ / _' |/ _ \
+| (__| | (_| | |_| | (_| |  __/  | (_| (_) | (_| |  __/
+ \___|_|\__,_|\__,_|\__,_|\___|   \___\___/ \__,_|\___|
+                      _       _
+          _ __   __ _| |_ ___| |__   ___ _ __
+         | '_ \ / _' | __/ __| '_ \ / _ \ '__|
+         | |_) | (_| | || (__| | | |  __/ |
+         | .__/ \__,_|\__\___|_| |_|\___|_|
+         |_|`
 
 // RepoURL is where people star and contribute.
-const RepoURL = "https://github.com/aveekpatra/claude_patcher"
+const RepoURL = "https://github.com/aveekpatra/cc-patcher"
 
 func openBrowser(url string) error {
 	var cmd *exec.Cmd
@@ -159,7 +159,7 @@ func (m *model) home() string {
 	body := lipgloss.JoinVertical(lipgloss.Center,
 		titleSt.Render(logo),
 		"",
-		mutedSt.Render("skills, config and harness patches for Claude Code"),
+		mutedSt.Render("cc-patcher: skills, config and harness patches for Claude Code"),
 		"",
 		"",
 		lipgloss.JoinVertical(lipgloss.Left, menu...),

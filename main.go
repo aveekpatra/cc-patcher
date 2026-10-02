@@ -6,10 +6,10 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/aveekpatra/claude_patcher/internal/config"
-	"github.com/aveekpatra/claude_patcher/internal/patches"
-	"github.com/aveekpatra/claude_patcher/internal/skills"
-	"github.com/aveekpatra/claude_patcher/internal/tui"
+	"github.com/aveekpatra/cc-patcher/internal/config"
+	"github.com/aveekpatra/cc-patcher/internal/patches"
+	"github.com/aveekpatra/cc-patcher/internal/skills"
+	"github.com/aveekpatra/cc-patcher/internal/tui"
 )
 
 // version is set at release time by GoReleaser.

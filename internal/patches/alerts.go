@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aveekpatra/claude_patcher/internal/claude"
+	"github.com/aveekpatra/cc-patcher/internal/claude"
 )
 
 // alertsConfig lives in StateDir/alerts.json and is created on enable.

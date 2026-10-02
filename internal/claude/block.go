@@ -8,10 +8,10 @@ import (
 )
 
 // Managed blocks are sections of a text file (like CLAUDE.md) that
-// claude_patcher owns, delimited by HTML comment markers.
+// cc-patcher owns, delimited by HTML comment markers.
 
 func markers(id string) (string, string) {
-	return "<!-- claude_patcher:begin " + id + " -->", "<!-- claude_patcher:end " + id + " -->"
+	return "<!-- cc-patcher:begin " + id + " -->", "<!-- cc-patcher:end " + id + " -->"
 }
 
 func HasBlock(path, id string) bool {

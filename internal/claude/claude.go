@@ -18,8 +18,8 @@ func Dir() string {
 	return filepath.Join(home, ".claude")
 }
 
-// StateDir holds files owned by claude_patcher.
-func StateDir() string { return filepath.Join(Dir(), "claude_patcher") }
+// StateDir holds files owned by cc-patcher.
+func StateDir() string { return filepath.Join(Dir(), "cc-patcher") }
 
 func SettingsPath() string { return filepath.Join(Dir(), "settings.json") }
 
@@ -52,7 +52,7 @@ func SaveSettings(s Settings) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	backup := path + ".claude_patcher.bak"
+	backup := path + ".cc-patcher.bak"
 	if _, err := os.Stat(backup); errors.Is(err, os.ErrNotExist) {
 		if orig, err := os.ReadFile(path); err == nil {
 			_ = os.WriteFile(backup, orig, 0o644)
