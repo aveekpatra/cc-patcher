@@ -77,3 +77,17 @@ func TestFilter(t *testing.T) {
 		t.Fatal("esc did not clear filter")
 	}
 }
+
+func TestDetails(t *testing.T) {
+	long := &fake{name: "long"}
+	l := newList("Patches", []Toggle{long, &fake{name: "b"}})
+	l.update(key("i"))
+	v := l.view(50, 20)
+	t.Log("\n" + v)
+	if !strings.Contains(v, "      desc of long") {
+		t.Fatal("details not shown under the row")
+	}
+	if len(strings.Split(v, "\n")) != 20 {
+		t.Fatal("height changed")
+	}
+}

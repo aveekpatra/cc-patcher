@@ -15,9 +15,23 @@ import (
 // preset sets several settings.json keys and env vars at once. Values it
 // replaces are saved and put back when the preset is turned off.
 func preset(id, name, desc string, settings map[string]any, env map[string]string) *Option {
+	var lines []string
+	for _, k := range sortedKeys(settings) {
+		v, _ := json.Marshal(settings[k])
+		lines = append(lines, "settings.json "+k+" = "+clipJSON(string(v)))
+	}
+	envKeys := make([]string, 0, len(env))
+	for k := range env {
+		envKeys = append(envKeys, k)
+	}
+	sort.Strings(envKeys)
+	for _, k := range envKeys {
+		lines = append(lines, "env "+k+"="+env[k])
+	}
 	return &Option{
-		name: name,
-		desc: desc,
+		name:    name,
+		desc:    desc,
+		details: strings.Join(lines, "\n"),
 		enabled: func() bool {
 			s, err := claude.LoadSettings()
 			if err != nil {
@@ -86,6 +100,22 @@ func preset(id, name, desc string, settings map[string]any, env map[string]strin
 			})
 		},
 	}
+}
+
+func sortedKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func clipJSON(s string) string {
+	if len(s) > 160 {
+		return s[:157] + "..."
+	}
+	return s
 }
 
 type savedValues struct {

@@ -37,6 +37,22 @@ type Patch struct {
 func (p *Patch) Name() string        { return p.name }
 func (p *Patch) Description() string { return p.desc }
 
+// Details lists the hooks the patch registers.
+func (p *Patch) Details() string {
+	if len(p.regs) == 0 {
+		return ""
+	}
+	var parts []string
+	for _, r := range p.regs {
+		e := r.event
+		if r.matcher != "" && r.matcher != "*" {
+			e += " (" + r.matcher + ")"
+		}
+		parts = append(parts, e)
+	}
+	return "Hooks: " + strings.Join(parts, ", ") + "\nRuns: cc-patcher hook " + p.hookArg
+}
+
 // Note is shown in the TUI after the patch is enabled.
 func (p *Patch) Note() string {
 	if p.note == nil {

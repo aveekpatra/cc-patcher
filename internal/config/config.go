@@ -13,12 +13,14 @@ import (
 // Option is a config toggle backed by a pair of enable/disable functions.
 type Option struct {
 	name, desc string
+	details    string // optional extra lines for the details view
 	enabled    func() bool
 	enable     func() error
 	disable    func() error
 }
 
 func (o *Option) Name() string        { return o.name }
+func (o *Option) Details() string     { return o.details }
 func (o *Option) Description() string { return o.desc }
 func (o *Option) Enabled() bool       { return o.enabled() }
 func (o *Option) Enable() error       { return o.enable() }

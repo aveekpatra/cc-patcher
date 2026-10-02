@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // list is a multi-select screen. Checked means "should be on"; enter applies
@@ -20,6 +21,7 @@ type list struct {
 	status  []string
 	filter  string
 	typing  bool  // keys go to the filter
+	expand  bool  // show the selected item's full description
 	visible []int // indices of items matching filter
 }
 
@@ -94,6 +96,8 @@ func (l *list) update(k tea.KeyMsg) (bool, tea.Cmd) {
 	switch key {
 	case "/":
 		l.typing = true
+	case "i", "tab":
+		l.expand = !l.expand
 	case "esc":
 		if l.filter != "" {
 			l.filter = ""
@@ -195,13 +199,17 @@ func (l *list) view(width, height int) string {
 
 	var bottom []string
 	bottom = append(bottom, l.status...)
-	hints := "space toggle   a all   / filter   enter apply   esc back   * pending"
+	hints := "space toggle   i details   a all   / filter   enter apply   esc back   * pending"
 	if l.typing {
 		hints = "type to filter   enter done   esc clear"
 	}
 	bottom = append(bottom, mutedSt.Render(hints))
 
-	rows := max(height-len(top)-len(bottom)-1, 3)
+	var info []string
+	if l.expand && len(l.visible) > 0 {
+		info = l.details(l.items[l.visible[l.cursor]], width-6)
+	}
+	rows := max(height-len(top)-len(bottom)-len(info)-1, 3)
 	if l.cursor < l.offset {
 		l.offset = l.cursor
 	}
@@ -240,10 +248,13 @@ func (l *list) view(width, height int) string {
 			cur, box, name = "> ", selSt.Render(box), selSt.Render(name)
 		}
 		line := cur + box + mark + " " + name
-		if room := width - nameW - 10; room > 10 {
+		if room := width - nameW - 10; room > 10 && !(l.expand && vi == l.cursor) {
 			line += "  " + mutedSt.Render(truncate(it.Description(), room))
 		}
 		mid = append(mid, line)
+		if vi == l.cursor && !l.typing {
+			mid = append(mid, info...)
+		}
 	}
 	if more := len(l.visible) - (l.offset + rows); more > 0 {
 		mid = append(mid, mutedSt.Render(fmt.Sprintf("  ... %d more", more)))
@@ -252,6 +263,24 @@ func (l *list) view(width, height int) string {
 	gap := max(height-len(top)-len(mid)-len(bottom)+1, 1)
 	return strings.Join(top, "\n") + "\n" + strings.Join(mid, "\n") +
 		strings.Repeat("\n", gap) + strings.Join(bottom, "\n")
+}
+
+// details is the expanded block under the selected row: the full
+// description wrapped to width, then any extra lines the item offers.
+func (l *list) details(it Toggle, width int) []string {
+	width = max(width, 20)
+	box := lipgloss.NewStyle().Width(width)
+	var out []string
+	add := func(text string, st lipgloss.Style) {
+		for _, line := range strings.Split(box.Render(text), "\n") {
+			out = append(out, "      "+st.Render(strings.TrimRight(line, " ")))
+		}
+	}
+	add(it.Description(), lipgloss.NewStyle())
+	if d, ok := it.(interface{ Details() string }); ok && d.Details() != "" {
+		add(d.Details(), mutedSt)
+	}
+	return append(out, "")
 }
 
 func truncate(s string, n int) string {
