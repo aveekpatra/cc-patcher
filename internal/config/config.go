@@ -94,12 +94,11 @@ func Options(skillsFS fs.FS) []*Option {
 		}
 		return nil
 	}
-	return []*Option{
+	return append([]*Option{
 		block("Concise replies", "CLAUDE.md: always answer in min style (installs the min skill)", "concise", conciseBody, installMin),
 		block("Patient waiting", "CLAUDE.md: wait with background sleeps instead of looping when blocked on people or CI", "waiting", waitingBody, nil),
 		block("ASCII-only output", "CLAUDE.md: ASCII only, never the em dash character", "ascii", asciiBody, nil),
 		setting("Concise output style", `settings.json: outputStyle = "Concise"`, "outputStyle", "Concise"),
-		setting("No co-author trailer", "settings.json: includeCoAuthoredBy = false", "includeCoAuthoredBy", false),
 		setting("Fullscreen TUI", `settings.json: tui = "fullscreen"`, "tui", "fullscreen"),
-	}
+	}, presets()...)
 }

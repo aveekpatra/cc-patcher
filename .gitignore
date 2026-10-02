@@ -2,3 +2,4 @@ cc-patcher
 /dist/
 .DS_Store
 /dist/
+.claude/worktrees/

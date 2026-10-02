@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/aveekpatra/cc-patcher/internal/config"
+	"github.com/aveekpatra/cc-patcher/internal/files"
 	"github.com/aveekpatra/cc-patcher/internal/patches"
 	"github.com/aveekpatra/cc-patcher/internal/skills"
 	"github.com/aveekpatra/cc-patcher/internal/tui"
@@ -25,6 +26,9 @@ func main() {
 			if len(os.Args) > 2 {
 				patches.RunHook(os.Args[2], os.Stdin, os.Stdout)
 			}
+			return
+		case "files":
+			files.Run(os.Stdin, os.Stdout)
 			return
 		case "version", "--version", "-v":
 			fmt.Println(version)
