@@ -84,6 +84,9 @@ func (l *list) apply() {
 			l.status = append(l.status, badSt.Render(fmt.Sprintf("%s: %v", it.Name(), err)))
 		case l.want[i]:
 			on++
+			if n, ok := it.(interface{ Note() string }); ok && n.Note() != "" {
+				l.status = append(l.status, n.Note())
+			}
 		default:
 			off++
 		}

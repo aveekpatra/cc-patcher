@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"time"
 
 	"github.com/aveekpatra/claude_patcher/internal/config"
 	"github.com/aveekpatra/claude_patcher/internal/patches"
@@ -23,8 +22,8 @@ func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "hook":
-			if len(os.Args) > 2 && os.Args[2] == "timestamp" {
-				patches.RunTimestampHook(os.Stdin, os.Stdout, time.Now())
+			if len(os.Args) > 2 {
+				patches.RunHook(os.Args[2], os.Stdin, os.Stdout)
 			}
 			return
 		case "version", "--version", "-v":

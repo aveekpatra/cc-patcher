@@ -1,4 +1,4 @@
-// Package patches changes how the Claude Code harness behaves, mostly by
+// Package patches changes how the Claude Code harness behaves by
 // registering claude_patcher itself as a hook command.
 package patches
 
@@ -11,17 +11,34 @@ import (
 	"github.com/aveekpatra/claude_patcher/internal/claude"
 )
 
+// reg is one hook registration in settings.json.
+type reg struct {
+	event   string
+	matcher string // "" for events without one
+	timeout int    // seconds
+	async   bool
+}
+
 // Patch is one harness change.
 type Patch struct {
 	name, desc string
-	// events maps a hook event name to its matcher ("" for events without one).
-	events map[string]string
 	// hookArg is passed as `claude_patcher hook <hookArg>`.
 	hookArg string
+	regs    []reg
+	setup   func() error  // optional, runs before enabling
+	note    func() string // optional, shown after enabling
 }
 
 func (p *Patch) Name() string        { return p.name }
 func (p *Patch) Description() string { return p.desc }
+
+// Note is shown in the TUI after the patch is enabled.
+func (p *Patch) Note() string {
+	if p.note == nil {
+		return ""
+	}
+	return p.note()
+}
 
 // marker identifies hook commands owned by this patch.
 func (p *Patch) marker() string { return " hook " + p.hookArg }
@@ -47,8 +64,8 @@ func (p *Patch) Enabled() bool {
 		return false
 	}
 	hooks, _ := s["hooks"].(map[string]any)
-	for event := range p.events {
-		if !hasCommand(hooks[event], p.marker()) {
+	for _, r := range p.regs {
+		if !hasCommand(hooks[r.event], p.marker()) {
 			return false
 		}
 	}
@@ -56,17 +73,24 @@ func (p *Patch) Enabled() bool {
 }
 
 func (p *Patch) Enable() error {
+	if p.setup != nil {
+		if err := p.setup(); err != nil {
+			return err
+		}
+	}
 	return claude.Update(func(s claude.Settings) {
 		hooks := removeHooks(s, p.marker())
-		for event, matcher := range p.events {
-			group := map[string]any{
-				"hooks": []any{map[string]any{"type": "command", "command": p.command(), "timeout": 5}},
+		for _, r := range p.regs {
+			h := map[string]any{"type": "command", "command": p.command(), "timeout": r.timeout}
+			if r.async {
+				h["async"] = true
 			}
-			if matcher != "" {
-				group["matcher"] = matcher
+			group := map[string]any{"hooks": []any{h}}
+			if r.matcher != "" {
+				group["matcher"] = r.matcher
 			}
-			list, _ := hooks[event].([]any)
-			hooks[event] = append(list, group)
+			list, _ := hooks[r.event].([]any)
+			hooks[r.event] = append(list, group)
 		}
 		s["hooks"] = hooks
 	})
@@ -141,14 +165,61 @@ func removeHooks(s claude.Settings, marker string) map[string]any {
 	return hooks
 }
 
+const editTools = "Edit|Write|MultiEdit|NotebookEdit"
+
 // All returns every available patch.
 func All() []*Patch {
 	return []*Patch{
 		{
-			name:    "Time awareness",
-			desc:    "Adds the current time and elapsed time to every prompt and tool call",
-			events:  map[string]string{"UserPromptSubmit": "", "PostToolUse": "*"},
-			hookArg: "timestamp",
+			name: "Time awareness", hookArg: "timestamp",
+			desc: "Adds the current time and elapsed time to every prompt and tool call",
+			regs: []reg{{"UserPromptSubmit", "", 5, false}, {"PostToolUse", "*", 5, false}},
+		},
+		{
+			name: "Command guard", hookArg: "guard",
+			desc: "Blocks rm -rf /, force push to main, DROP TABLE, .env reads; asks before curl | sh, reset --hard",
+			regs: []reg{{"PreToolUse", "Bash|Read|Edit|Write|MultiEdit", 5, false}},
+		},
+		{
+			name: "Verify before done", hookArg: "verify",
+			desc: "After edits, Claude cannot finish until tests and lint pass (3 tries)",
+			regs: []reg{{"PostToolUse", editTools, 5, false}, {"Stop", "", 600, false}},
+		},
+		{
+			name: "Stuck detector", hookArg: "stuck",
+			desc: "Warns Claude when it repeats the same tool call",
+			regs: []reg{{"PreToolUse", "*", 5, false}},
+		},
+		{
+			name: "Context budget", hookArg: "context",
+			desc: "Tells Claude when its context passes 50, 70, 85 and 95 percent",
+			regs: []reg{{"UserPromptSubmit", "", 5, false}, {"PostToolUse", "*", 5, false}},
+		},
+		{
+			name: "Format and lint", hookArg: "check",
+			desc: "Formats each edited file and feeds lint errors back (gofmt, prettier, ruff, eslint...)",
+			regs: []reg{{"PostToolUse", "Edit|Write|MultiEdit", 60, false}},
+		},
+		{
+			name: "Git checkpoints", hookArg: "checkpoint",
+			desc: "Snapshots the work tree each turn into refs/claude-checkpoints/<session>",
+			regs: []reg{{"Stop", "", 60, true}},
+		},
+		{
+			name: "Compaction memory", hookArg: "compact",
+			desc: "Saves requests, edited files and todos before compaction, restores them after",
+			regs: []reg{{"PreCompact", "", 30, false}, {"SessionStart", "compact", 10, false}},
+		},
+		{
+			name: "Injection scan", hookArg: "injection",
+			desc: "Warns Claude when web, shell or MCP output contains instructions aimed at it",
+			regs: []reg{{"PostToolUse", "WebFetch|WebSearch|Bash|mcp__.*", 5, false}},
+		},
+		{
+			name: "Phone alerts", hookArg: "alerts",
+			desc:  "ntfy push when Claude finishes or waits; approve or deny prompts from the phone",
+			regs:  []reg{{"Stop", "", 15, true}, {"Notification", "", 15, true}, {"PermissionRequest", "", 120, false}},
+			setup: setupAlerts, note: alertsNote,
 		},
 	}
 }
