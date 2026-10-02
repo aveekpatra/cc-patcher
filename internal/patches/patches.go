@@ -173,8 +173,16 @@ func removeHooks(s claude.Settings, marker string) map[string]any {
 
 const editTools = "Edit|Write|MultiEdit|NotebookEdit"
 
+// extraPatches lets other files in this package register patches from
+// init(), so each feature lives in its own file.
+var extraPatches []*Patch
+
 // All returns every available patch.
 func All() []*Patch {
+	return append(corePatches(), extraPatches...)
+}
+
+func corePatches() []*Patch {
 	return []*Patch{
 		{
 			name: "Time awareness", hookArg: "timestamp",
