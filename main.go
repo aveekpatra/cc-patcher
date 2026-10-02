@@ -1,56 +1,67 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
+	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/aveekpatra/claude_patcher/internal/config"
+	"github.com/aveekpatra/claude_patcher/internal/patches"
+	"github.com/aveekpatra/claude_patcher/internal/skills"
+	"github.com/aveekpatra/claude_patcher/internal/tui"
 )
 
-type model struct {
-	choices []string
-	cursor  int
-}
+// version is set at release time by GoReleaser.
+var version = "dev"
 
-func initialModel() model {
-	return model{choices: []string{"Install config", "Install skills", "Apply harness patches"}}
-}
-
-func (m model) Init() tea.Cmd { return nil }
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if k, ok := msg.(tea.KeyMsg); ok {
-		switch k.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-		}
-	}
-	return m, nil
-}
-
-func (m model) View() string {
-	s := "claude_patcher\n\n"
-	for i, c := range m.choices {
-		cur := " "
-		if i == m.cursor {
-			cur = ">"
-		}
-		s += fmt.Sprintf("%s %s\n", cur, c)
-	}
-	return s + "\nq to quit\n"
-}
+//go:embed all:skills
+var bundled embed.FS
 
 func main() {
-	if _, err := tea.NewProgram(initialModel()).Run(); err != nil {
-		fmt.Println(err)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "hook":
+			if len(os.Args) > 2 && os.Args[2] == "timestamp" {
+				patches.RunTimestampHook(os.Stdin, os.Stdout, time.Now())
+			}
+			return
+		case "version", "--version", "-v":
+			fmt.Println(version)
+			return
+		}
+	}
+
+	skillsFS, _ := fs.Sub(bundled, "skills")
+	sections := []tui.Section{
+		{Title: "Skills", Summary: "install or remove bundled skills", Items: func() []tui.Toggle {
+			all, _ := skills.List(skillsFS)
+			out := make([]tui.Toggle, len(all))
+			for i, s := range all {
+				out[i] = s
+			}
+			return out
+		}},
+		{Title: "Config", Summary: "Claude Code settings and CLAUDE.md", Items: func() []tui.Toggle {
+			all := config.Options(skillsFS)
+			out := make([]tui.Toggle, len(all))
+			for i, o := range all {
+				out[i] = o
+			}
+			return out
+		}},
+		{Title: "Patches", Summary: "change how the harness behaves", Items: func() []tui.Toggle {
+			all := patches.All()
+			out := make([]tui.Toggle, len(all))
+			for i, p := range all {
+				out[i] = p
+			}
+			return out
+		}},
+	}
+	if err := tui.Run(version, sections); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
