@@ -234,8 +234,61 @@ func requestInjector() *Option {
 	}
 }
 
+// skipPermissions starts sessions in bypassPermissions mode. It edits only
+// permissions.defaultMode, keeping the rest of the permissions object, and
+// puts back whatever mode was set before.
+func skipPermissions() *Option {
+	prevMode := filepath.Join(claude.StateDir(), "config-prev", "skip-permissions.json")
+	mode := func(s claude.Settings) any {
+		p, _ := s["permissions"].(map[string]any)
+		return p["defaultMode"]
+	}
+	return &Option{
+		name:    "Skip permission prompts",
+		desc:    "Starts every local session in bypassPermissions (--dangerously-skip-permissions) without the confirmation. Deny rules and the command guard still apply; cloud sessions ignore it",
+		details: "settings.json permissions.defaultMode = \"bypassPermissions\"\nsettings.json skipDangerousModePermissionPrompt = true",
+		enabled: func() bool {
+			s, err := claude.LoadSettings()
+			return err == nil && mode(s) == "bypassPermissions" && s["skipDangerousModePermissionPrompt"] == true
+		},
+		enable: func() error {
+			return claude.Update(func(s claude.Settings) {
+				if old := mode(s); old != nil && old != "bypassPermissions" {
+					b, _ := json.Marshal(old)
+					_ = os.MkdirAll(filepath.Dir(prevMode), 0o755)
+					_ = os.WriteFile(prevMode, b, 0o644)
+				}
+				p, _ := s["permissions"].(map[string]any)
+				if p == nil {
+					p = map[string]any{}
+				}
+				p["defaultMode"] = "bypassPermissions"
+				s["permissions"] = p
+				s["skipDangerousModePermissionPrompt"] = true
+			})
+		},
+		disable: func() error {
+			return claude.Update(func(s claude.Settings) {
+				p, _ := s["permissions"].(map[string]any)
+				var old any
+				if b, err := os.ReadFile(prevMode); err == nil && json.Unmarshal(b, &old) == nil && p != nil {
+					p["defaultMode"] = old
+				} else if p != nil {
+					delete(p, "defaultMode")
+					if len(p) == 0 {
+						delete(s, "permissions")
+					}
+				}
+				delete(s, "skipDangerousModePermissionPrompt")
+				_ = os.Remove(prevMode)
+			})
+		},
+	}
+}
+
 func presets() []*Option {
 	return []*Option{
+		skipPermissions(),
 		preset("unattended", "Unattended mode",
 			"Retries rate limits forever, continues after usage resets, auto-answers questions after 10m",
 			map[string]any{"autoContinueAtUsageLimit": true, "askUserQuestionTimeout": "10m"},

@@ -32,3 +32,21 @@ func TestPresetRestoresPreviousValues(t *testing.T) {
 		t.Fatalf("not restored: %v", s)
 	}
 }
+
+func TestSkipPermissions(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", dir)
+	os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"permissions":{"allow":["x"],"defaultMode":"acceptEdits"}}`), 0o644)
+	o := skipPermissions()
+	if err := o.Enable(); err != nil || !o.Enabled() {
+		t.Fatal("enable failed", err)
+	}
+	if err := o.Disable(); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := claude.LoadSettings()
+	p := s["permissions"].(map[string]any)
+	if p["defaultMode"] != "acceptEdits" || len(p["allow"].([]any)) != 1 || s["skipDangerousModePermissionPrompt"] != nil {
+		t.Fatalf("not restored: %v", s)
+	}
+}
