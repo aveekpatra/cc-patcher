@@ -15,3 +15,6 @@ if ($userPath -notlike "*$dir*") {
   Write-Host "added $dir to PATH (restart your terminal)"
 }
 Write-Host "installed to $dir\cc-patcher.exe"
+
+# Start it, unless asked not to.
+if (-not $env:CC_PATCHER_NO_LAUNCH) { & (Join-Path $dir "cc-patcher.exe") }

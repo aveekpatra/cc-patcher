@@ -18,3 +18,9 @@ install -m 755 "$tmp/cc-patcher" "$dir/cc-patcher"
 rm -rf "$tmp"
 echo "installed to $dir/cc-patcher"
 case ":$PATH:" in *":$dir:"*) ;; *) echo "add $dir to your PATH" ;; esac
+
+# Start it, unless asked not to or there is no terminal to draw on. The
+# script itself arrives on stdin through the pipe, so read keys from the tty.
+if [ -z "$CC_PATCHER_NO_LAUNCH" ] && [ -t 1 ] && { : </dev/tty; } 2>/dev/null; then
+  exec "$dir/cc-patcher" </dev/tty
+fi

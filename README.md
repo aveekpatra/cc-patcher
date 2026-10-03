@@ -6,7 +6,7 @@ Claude Code is configured through a pile of files: `settings.json`, `CLAUDE.md`,
 
 ![cc-patcher home screen](docs/home-v061.png)
 
-## Install or update
+## Install, update and launch
 
 macOS and Linux:
 
@@ -20,7 +20,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/aveekpatra/cc-patcher/main/install.ps1 | iex
 ```
 
-Run the same command again to update. Then start it with `cc-patcher`.
+The same command installs, updates and starts cc-patcher. Later, start it with `cc-patcher`. Set `CC_PATCHER_NO_LAUNCH=1` to install without starting it.
 
 ## What it does
 
