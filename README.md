@@ -4,7 +4,7 @@ A terminal app that sets up Claude Code the way you like it, in one place, on an
 
 Claude Code is configured through a pile of files: `settings.json`, `CLAUDE.md`, hook scripts, skills folders, environment variables. cc-patcher puts all of it behind one checklist. Tick what you want, press enter, and it writes the files for you. Untick it and the change is undone, including any value it replaced.
 
-![cc-patcher home screen](docs/home.png)
+![cc-patcher home screen](docs/home-v061.png)
 
 ## Install or update
 
@@ -28,9 +28,9 @@ Run the same command again to update. Then start it with `cc-patcher`.
 - **Config**: change what Claude Code already lets you set: `settings.json` keys, environment variables, the status line, alone or as presets.
 - **Skills**: instructions Claude reads. Install or remove any skill in `~/.claude/skills`, yours or bundled or downloaded from GitHub, and switch always-on `CLAUDE.md` rules on and off.
 
-![cc-patcher patches screen](docs/patches.png)
+![cc-patcher patches screen](docs/patches-v061.png)
 
-![cc-patcher config screen](docs/config.png)
+![cc-patcher config screen](docs/config-v061.png)
 
 Every item shows what it changes before you turn it on. Use `/` to filter, `space` to tick, `enter` to apply.
 
