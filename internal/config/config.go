@@ -87,19 +87,26 @@ When you are blocked on something outside your control (a person replying, a rev
 
 Do other unblocked work while you wait if there is any.`
 
-// Options returns every config option. skillsFS is used by options that
-// depend on a bundled skill.
-func Options(skillsFS fs.FS) []*Option {
+// Rules returns the always-on CLAUDE.md instructions. They are things
+// Claude reads, so the TUI lists them under Skills. skillsFS is used by
+// rules that depend on a bundled skill.
+func Rules(skillsFS fs.FS) []*Option {
 	installMin := func() error {
 		if s := skills.Find(skillsFS, "min"); s != nil && !s.Enabled() {
 			return s.Enable()
 		}
 		return nil
 	}
+	return []*Option{
+		block("Concise replies", "CLAUDE.md rule: always answer in min style (installs the min skill)", "concise", conciseBody, installMin),
+		block("Patient waiting", "CLAUDE.md rule: wait with background sleeps instead of looping when blocked on people or CI", "waiting", waitingBody, nil),
+		block("ASCII-only output", "CLAUDE.md rule: ASCII only, never the em dash character", "ascii", asciiBody, nil),
+	}
+}
+
+// Options returns every settings.json and env option.
+func Options() []*Option {
 	return append([]*Option{
-		block("Concise replies", "CLAUDE.md: always answer in min style (installs the min skill)", "concise", conciseBody, installMin),
-		block("Patient waiting", "CLAUDE.md: wait with background sleeps instead of looping when blocked on people or CI", "waiting", waitingBody, nil),
-		block("ASCII-only output", "CLAUDE.md: ASCII only, never the em dash character", "ascii", asciiBody, nil),
 		setting("Concise output style", `settings.json: outputStyle = "Concise"`, "outputStyle", "Concise"),
 		setting("Fullscreen TUI", `settings.json: tui = "fullscreen"`, "tui", "fullscreen"),
 	}, presets()...)

@@ -12,23 +12,28 @@ import (
 	"github.com/aveekpatra/cc-patcher/internal/statusline"
 )
 
-// The status line patches share Claude Code's single statusLine setting:
+// The status line items share Claude Code's single statusLine setting:
 // each one adds or removes its segment from `cc-patcher statusline <segs>`.
+// The status line is a built-in setting, so the TUI lists these under
+// Config, not Patches.
 
-func init() {
+// StatusLine returns the status line segment toggles.
+func StatusLine() []*Patch {
+	var out []*Patch
 	for _, p := range []struct{ name, seg, desc string }{
 		{"Usage meter", "usage", "Status line: context, 5h and 7d limits with reset countdowns, and session cost"},
 		{"Mood face", "mood", "Status line: an ASCII face showing what Claude is doing (reading, editing, failing...)"},
 		{"Session pet", "pet", "Status line: an ASCII creature picked per session that hatches and grows as you work"},
 	} {
 		seg := p.seg
-		extraPatches = append(extraPatches, &Patch{
+		out = append(out, &Patch{
 			name: p.name, desc: p.desc,
 			enabled: func() bool { return slices.Contains(ourSegments(), seg) },
 			enable:  func() error { return setSegment(seg, true) },
 			disable: func() error { return setSegment(seg, false) },
 		})
 	}
+	return out
 }
 
 const statusMarker = `" statusline `

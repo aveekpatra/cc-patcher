@@ -11,7 +11,7 @@ import (
 
 func statusPatch(t *testing.T, name string) *Patch {
 	t.Helper()
-	for _, p := range All() {
+	for _, p := range StatusLine() {
 		if p.Name() == name {
 			return p
 		}

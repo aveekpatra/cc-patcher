@@ -24,9 +24,9 @@ Run the same command again to update. Then start it with `cc-patcher`.
 
 ## What it does
 
-- **Skills**: install or remove skills in `~/.claude/skills`. Some ship inside cc-patcher, others download from GitHub when you pick them.
-- **Config**: switch Claude Code settings and `CLAUDE.md` instructions on and off, alone or as presets.
-- **Patches**: change how Claude Code behaves while it works: what it sees, what it is allowed to run, what happens when it finishes. Patches run as hooks inside Claude Code, using the cc-patcher binary itself, so they need no Python or Node.
+- **Patches**: change what no setting can. They run inside Claude Code as hooks, using the cc-patcher binary itself, so they need no Python or Node. Items marked with a red `!` go further and edit Claude Code's own program files.
+- **Config**: change what Claude Code already lets you set: `settings.json` keys, environment variables, the status line, alone or as presets.
+- **Skills**: instructions Claude reads. Install or remove skills in `~/.claude/skills`, bundled or downloaded from GitHub, and switch always-on `CLAUDE.md` rules on and off.
 
 ![cc-patcher patches screen](docs/patches.png)
 

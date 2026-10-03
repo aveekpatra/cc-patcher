@@ -44,9 +44,12 @@ func main() {
 
 	skillsFS, _ := fs.Sub(bundled, "skills")
 	sections := []tui.Section{
-		{Title: "Skills", Summary: "install or remove bundled skills", Items: func() []tui.Toggle {
+		{Title: "Skills", Summary: "instructions Claude reads: skills and CLAUDE.md rules", Items: func() []tui.Toggle {
+			var out []tui.Toggle
+			for _, r := range config.Rules(skillsFS) {
+				out = append(out, r)
+			}
 			all, _ := skills.List(skillsFS)
-			out := make([]tui.Toggle, 0, len(all))
 			for _, s := range all {
 				out = append(out, s)
 			}
@@ -55,15 +58,17 @@ func main() {
 			}
 			return out
 		}},
-		{Title: "Config", Summary: "Claude Code settings and CLAUDE.md", Items: func() []tui.Toggle {
-			all := config.Options(skillsFS)
-			out := make([]tui.Toggle, len(all))
-			for i, o := range all {
-				out[i] = o
+		{Title: "Config", Summary: "Claude Code settings, env vars and status line", Items: func() []tui.Toggle {
+			var out []tui.Toggle
+			for _, o := range config.Options() {
+				out = append(out, o)
+			}
+			for _, p := range patches.StatusLine() {
+				out = append(out, p)
 			}
 			return out
 		}},
-		{Title: "Patches", Summary: "change how the harness behaves", Items: func() []tui.Toggle {
+		{Title: "Patches", Summary: "change what no setting can: hooks and program edits", Items: func() []tui.Toggle {
 			all := patches.All()
 			out := make([]tui.Toggle, len(all), len(all)+1)
 			for i, p := range all {
