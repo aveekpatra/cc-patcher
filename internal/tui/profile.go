@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aveekpatra/cc-patcher/internal/backup"
 	"github.com/aveekpatra/cc-patcher/internal/claude"
 )
 
@@ -23,6 +24,9 @@ type Profile struct {
 	// such as your own skills, keyed by item name then relative path.
 	// encoding/json stores the bytes as base64.
 	Files map[string]map[string][]byte `json:"files,omitempty"`
+	// Setup is the whole user-level Claude Code setup, so an import can
+	// replicate it on another machine.
+	Setup *backup.Backup `json:"setup,omitempty"`
 }
 
 // exporter is an item whose content travels inside the profile.
@@ -70,10 +74,17 @@ func Snapshot(sections []Section, files bool) Profile {
 	return p
 }
 
-// Export writes the current choices, with your own skills' files, to path
-// or to stdout for "-".
-func Export(sections []Section, path string) error {
-	return write(Snapshot(sections, true), path)
+// Export writes the current choices and the whole Claude Code setup to
+// path, or to stdout for "-". Secret-looking values are redacted unless
+// secrets is true.
+func Export(sections []Section, path string, secrets bool) error {
+	p := Snapshot(sections, false)
+	setup, err := backup.Take(secrets)
+	if err != nil {
+		return err
+	}
+	p.Setup = setup
+	return write(p, path)
 }
 
 func write(p Profile, path string) error {
@@ -128,6 +139,15 @@ func LoadProfile(src string) (Profile, error) {
 // profile leaves out are not touched. It returns one line per change or
 // problem.
 func Apply(sections []Section, p Profile) (on, off int, report []string) {
+	if p.Setup != nil {
+		r, err := backup.Restore(p.Setup)
+		report = append(report, r...)
+		if err != nil {
+			report = append(report, "restore failed: "+err.Error())
+			return on, off, report
+		}
+		claude.RepairPaths()
+	}
 	for _, s := range sections {
 		want, ok := p.Sections[s.Title]
 		if !ok {
@@ -189,7 +209,6 @@ func Apply(sections []Section, p Profile) (on, off int, report []string) {
 			report = append(report, fmt.Sprintf("%s / %s: not in this version, skipped", s.Title, n))
 		}
 	}
-	sort.Strings(report)
 	saveAuto(sections)
 	return on, off, report
 }

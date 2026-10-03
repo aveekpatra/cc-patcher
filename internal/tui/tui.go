@@ -161,7 +161,7 @@ func (m *model) updateInput(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *model) export() {
 	path := DefaultExportPath()
-	if err := Export(m.sections, path); err != nil {
+	if err := Export(m.sections, path, false); err != nil {
 		m.status = "export failed: " + err.Error()
 		return
 	}
@@ -237,8 +237,8 @@ func (m *model) home() string {
 	}
 	menu = append(menu,
 		"",
-		menuLine(m.cursor == m.exportIdx(), "Export", "save your choices to a file", sumW, "e"),
-		menuLine(m.cursor == m.importIdx(), "Import", "apply a saved file or URL", sumW, "i"),
+		menuLine(m.cursor == m.exportIdx(), "Export", "back up your whole setup to a file", sumW, "e"),
+		menuLine(m.cursor == m.importIdx(), "Import", "replicate a backup from a file or URL", sumW, "i"),
 		menuLine(m.cursor == m.quitIdx(), "Quit", "", sumW, "q"))
 
 	body := lipgloss.JoinVertical(lipgloss.Center,

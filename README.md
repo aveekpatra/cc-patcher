@@ -34,18 +34,19 @@ Run the same command again to update. Then start it with `cc-patcher`.
 
 Every item shows what it changes before you turn it on. Use `/` to filter, `space` to tick, `enter` to apply.
 
-## Save and share your setup
+## Back up and replicate your setup
 
-cc-patcher remembers what you turned on in `~/.claude/cc-patcher/profile.json`. Export it, then apply it anywhere in one go:
+One file holds your whole user-level Claude Code setup: `settings.json`, `CLAUDE.md`, keybindings, every skill (yours included, linked ones copied in), agents, slash commands, output styles, hooks, themes, user MCP servers, and your cc-patcher choices.
 
 ```sh
 cc-patcher export my-setup.json      # or press e on the home screen
 cc-patcher import my-setup.json      # a file or an https:// URL; or press i
 ```
 
-Import makes each section in the file match it exactly: listed items are turned on, the rest of that section off.
-
-The Skills screen lists every skill in `~/.claude/skills`, not just the ones cc-patcher ships, and any of them can be uninstalled. Uninstalled skills go to `~/.claude/cc-patcher/removed-skills`, so ticking them again brings them back; for a linked skill only the link moves. Exports carry the files of your own skills, so importing on a new machine installs them too.
+- Values that look like secrets (tokens, keys, passwords, auth headers) are redacted unless you export with `--with-secrets`. On import, a redacted value keeps whatever the target machine already has.
+- Paths under your home folder are rewritten for the new machine.
+- Files the import replaces are saved first in `~/.claude/cc-patcher/restore-<time>/`. MCP servers the target already has are left alone.
+- Not included: chat history, sessions, caches, login credentials, project-level `.claude` folders, and installed plugins (their settings come along; reinstall the plugins with `/plugin`).
 
 ## Good to know
 

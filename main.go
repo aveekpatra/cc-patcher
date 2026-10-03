@@ -41,16 +41,23 @@ func main() {
 		repair()
 		switch os.Args[1] {
 		case "export":
-			path := tui.DefaultExportPath()
-			if len(os.Args) > 2 {
-				path = os.Args[2]
+			path, secrets := tui.DefaultExportPath(), false
+			for _, a := range os.Args[2:] {
+				if a == "--with-secrets" {
+					secrets = true
+				} else {
+					path = a
+				}
 			}
-			if err := tui.Export(buildSections(), path); err != nil {
+			if err := tui.Export(buildSections(), path, secrets); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 			if path != "-" {
 				fmt.Println("exported to " + path)
+				if !secrets {
+					fmt.Println("secret-looking values were redacted; add --with-secrets to keep them")
+				}
 			}
 			return
 		case "import":
@@ -64,10 +71,10 @@ func main() {
 				os.Exit(1)
 			}
 			on, off, report := tui.Apply(buildSections(), prof)
-			fmt.Printf("enabled %d, disabled %d\n", on, off)
 			for _, r := range report {
-				fmt.Println("  " + r)
+				fmt.Println(r)
 			}
+			fmt.Printf("enabled %d, disabled %d\n", on, off)
 			return
 		case "version", "--version", "-v":
 			fmt.Println(version)
