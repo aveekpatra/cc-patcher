@@ -90,3 +90,25 @@ func TestDetails(t *testing.T) {
 		t.Fatal("height changed")
 	}
 }
+
+func TestHomeExportImport(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", dir)
+	t.Setenv("HOME", dir)
+	a, b := &fake{name: "alpha", on: true}, &fake{name: "beta"}
+	m := &model{version: "test", sections: []Section{{Title: "Patches", Items: func() []Toggle { return []Toggle{a, b} }}}}
+	m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	m.Update(key("e"))
+	if !strings.Contains(m.status, "exported to") {
+		t.Fatalf("export: %q", m.status)
+	}
+	a.on, b.on = false, true
+	m.Update(key("i"))
+	if m.input == nil || !strings.Contains(m.View(), "import from:") {
+		t.Fatal("no import prompt")
+	}
+	m.Update(key("enter"))
+	if !a.on || b.on || !strings.Contains(m.status, "enabled 1, disabled 1") {
+		t.Fatalf("import did not restore: a=%v b=%v status=%q", a.on, b.on, m.status)
+	}
+}

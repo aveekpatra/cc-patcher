@@ -36,14 +36,52 @@ func main() {
 				statusline.Run(os.Args[2], os.Stdin, os.Stdout)
 			}
 			return
+		case "export":
+			path := tui.DefaultExportPath()
+			if len(os.Args) > 2 {
+				path = os.Args[2]
+			}
+			if err := tui.Export(buildSections(), path); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			if path != "-" {
+				fmt.Println("exported to " + path)
+			}
+			return
+		case "import":
+			if len(os.Args) < 3 {
+				fmt.Fprintln(os.Stderr, "usage: cc-patcher import <file or url>")
+				os.Exit(2)
+			}
+			prof, err := tui.LoadProfile(os.Args[2])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			on, off, report := tui.Apply(buildSections(), prof)
+			fmt.Printf("enabled %d, disabled %d\n", on, off)
+			for _, r := range report {
+				fmt.Println("  " + r)
+			}
+			return
 		case "version", "--version", "-v":
 			fmt.Println(version)
 			return
 		}
 	}
 
+	sections := buildSections()
+	if err := tui.Run(version, sections); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+// buildSections lists every item, grouped as the TUI shows them.
+func buildSections() []tui.Section {
 	skillsFS, _ := fs.Sub(bundled, "skills")
-	sections := []tui.Section{
+	return []tui.Section{
 		{Title: "Skills", Summary: "instructions Claude reads: skills and CLAUDE.md rules", Items: func() []tui.Toggle {
 			var out []tui.Toggle
 			for _, r := range config.Rules(skillsFS) {
@@ -76,9 +114,5 @@ func main() {
 			}
 			return append(out, patches.TweakccStudio{})
 		}},
-	}
-	if err := tui.Run(version, sections); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
 	}
 }

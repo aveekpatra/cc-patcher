@@ -32,6 +32,17 @@ Run the same command again to update. Then start it with `cc-patcher`.
 
 Every item shows what it changes before you turn it on. Use `/` to filter, `space` to tick, `enter` to apply.
 
+## Save and share your setup
+
+cc-patcher remembers what you turned on in `~/.claude/cc-patcher/profile.json`. Export it, then apply it anywhere in one go:
+
+```sh
+cc-patcher export my-setup.json      # or press e on the home screen
+cc-patcher import my-setup.json      # a file or an https:// URL; or press i
+```
+
+Import makes each section in the file match it exactly: listed items are turned on, the rest of that section off.
+
 ## Good to know
 
 - The first time cc-patcher edits `~/.claude/settings.json`, it saves the original next to it as `settings.json.cc-patcher.bak`.

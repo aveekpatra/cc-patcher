@@ -74,7 +74,8 @@ type model struct {
 	screen   screen
 	cursor   int
 	list     *list
-	status   string // one-off message shown in the footer
+	status   string  // one-off message shown in the footer
+	input    *string // import path being typed, nil when not prompting
 	width    int
 	height   int
 }
@@ -108,18 +109,73 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.screen == listScreen {
 			done, cmd := m.list.update(msg)
+			if msg.String() == "enter" {
+				saveAuto(m.sections)
+			}
 			if done {
 				m.screen = homeScreen
 			}
 			return m, cmd
+		}
+		if m.input != nil {
+			return m.updateInput(msg)
 		}
 		return m.updateHome(msg)
 	}
 	return m, nil
 }
 
+// Home menu: one entry per section, then Export, Import and Quit.
+func (m *model) exportIdx() int { return len(m.sections) }
+func (m *model) importIdx() int { return len(m.sections) + 1 }
+func (m *model) quitIdx() int   { return len(m.sections) + 2 }
+
+func (m *model) updateInput(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch k.String() {
+	case "esc":
+		m.input, m.status = nil, ""
+	case "enter":
+		path := strings.TrimSpace(*m.input)
+		m.input = nil
+		prof, err := LoadProfile(path)
+		if err != nil {
+			m.status = "import failed: " + err.Error()
+			return m, nil
+		}
+		on, off, report := Apply(m.sections, prof)
+		m.status = fmt.Sprintf("imported %s: enabled %d, disabled %d", path, on, off)
+		if len(report) > 0 {
+			m.status += fmt.Sprintf(", %d problem(s): %s", len(report), strings.Join(report, "; "))
+		}
+	case "backspace":
+		if r := []rune(*m.input); len(r) > 0 {
+			*m.input = string(r[:len(r)-1])
+		}
+	default:
+		if k.Type == tea.KeyRunes || k.Type == tea.KeySpace {
+			*m.input += string(k.Runes)
+		}
+	}
+	return m, nil
+}
+
+func (m *model) export() {
+	path := DefaultExportPath()
+	if err := Export(m.sections, path); err != nil {
+		m.status = "export failed: " + err.Error()
+		return
+	}
+	m.status = "exported to " + path
+}
+
+func (m *model) startImport() {
+	path := DefaultExportPath()
+	m.input = &path
+	m.status = ""
+}
+
 func (m *model) updateHome(k tea.KeyMsg) (tea.Model, tea.Cmd) {
-	n := len(m.sections) + 1 // last entry is Quit
+	n := m.quitIdx() + 1
 	key := k.String()
 	if i := int(key[0] - '1'); len(key) == 1 && i >= 0 && i < len(m.sections) {
 		m.cursor = i
@@ -128,6 +184,12 @@ func (m *model) updateHome(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch key {
 	case "q", "esc":
 		return m, tea.Quit
+	case "e":
+		m.cursor = m.exportIdx()
+		m.export()
+	case "i":
+		m.cursor = m.importIdx()
+		m.startImport()
 	case "g":
 		m.status = "opening " + RepoURL
 		if err := openBrowser(RepoURL); err != nil {
@@ -138,8 +200,15 @@ func (m *model) updateHome(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "down", "j", "tab":
 		m.cursor = (m.cursor + 1) % n
 	case "enter", " ", "right", "l":
-		if m.cursor == len(m.sections) {
+		switch m.cursor {
+		case m.quitIdx():
 			return m, tea.Quit
+		case m.exportIdx():
+			m.export()
+			return m, nil
+		case m.importIdx():
+			m.startImport()
+			return m, nil
 		}
 		s := m.sections[m.cursor]
 		m.list = newList(s.Title, s.Items())
@@ -166,7 +235,11 @@ func (m *model) home() string {
 	for i, s := range m.sections {
 		menu = append(menu, menuLine(i == m.cursor, s.Title, s.Summary, sumW, fmt.Sprint(i+1)))
 	}
-	menu = append(menu, menuLine(m.cursor == len(m.sections), "Quit", "", sumW, "q"))
+	menu = append(menu,
+		"",
+		menuLine(m.cursor == m.exportIdx(), "Export", "save your choices to a file", sumW, "e"),
+		menuLine(m.cursor == m.importIdx(), "Import", "apply a saved file or URL", sumW, "i"),
+		menuLine(m.cursor == m.quitIdx(), "Quit", "", sumW, "q"))
 
 	body := lipgloss.JoinVertical(lipgloss.Center,
 		titleSt.Render(logo),
@@ -176,9 +249,12 @@ func (m *model) home() string {
 		"",
 		lipgloss.JoinVertical(lipgloss.Left, menu...),
 	)
-	hints := mutedSt.Render("up/down or 1-" + fmt.Sprint(len(m.sections)) + " select   enter open   q quit")
+	hints := mutedSt.Render("up/down or 1-" + fmt.Sprint(len(m.sections)) + " select   enter open   e export   i import   q quit")
 	if m.status != "" {
-		hints = mutedSt.Render(m.status)
+		hints = mutedSt.Render(truncate(m.status, max(m.width-60, 40)))
+	}
+	if m.input != nil {
+		hints = "import from: " + *m.input + selSt.Render("_") + mutedSt.Render("   enter apply   esc cancel")
 	}
 	ver := mutedSt.Render("GPL-3.0, free and open source   ") +
 		selSt.Render("g") + mutedSt.Render(" star or contribute on GitHub   "+m.version)
