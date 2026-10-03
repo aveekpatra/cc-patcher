@@ -30,6 +30,8 @@ Run the same command again to update. Then start it with `cc-patcher`.
 
 ![cc-patcher patches screen](docs/patches.png)
 
+![cc-patcher config screen](docs/config.png)
+
 Every item shows what it changes before you turn it on. Use `/` to filter, `space` to tick, `enter` to apply.
 
 ## Save and share your setup
