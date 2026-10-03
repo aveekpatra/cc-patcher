@@ -19,7 +19,19 @@ import (
 type Profile struct {
 	Version  int                 `json:"version"`
 	Sections map[string][]string `json:"sections"`
+	// Files carries the content of items that exist only on this machine,
+	// such as your own skills, keyed by item name then relative path.
+	// encoding/json stores the bytes as base64.
+	Files map[string]map[string][]byte `json:"files,omitempty"`
 }
+
+// exporter is an item whose content travels inside the profile.
+type exporter interface {
+	Files() (map[string][]byte, error)
+}
+
+// InstallFiles recreates an exported item from its files; main sets it.
+var InstallFiles func(name string, files map[string][]byte) error
 
 // AutoProfilePath is where the current choices are saved after every apply.
 func AutoProfilePath() string { return filepath.Join(claude.StateDir(), "profile.json") }
@@ -30,8 +42,9 @@ func DefaultExportPath() string {
 	return filepath.Join(home, "cc-patcher-profile.json")
 }
 
-// Snapshot returns the items that are on right now.
-func Snapshot(sections []Section) Profile {
+// Snapshot returns the items that are on right now. With files, it also
+// carries the content of items that only exist on this machine.
+func Snapshot(sections []Section, files bool) Profile {
 	p := Profile{Version: 1, Sections: map[string][]string{}}
 	for _, s := range sections {
 		on := []string{}
@@ -41,6 +54,14 @@ func Snapshot(sections []Section) Profile {
 			}
 			if it.Enabled() {
 				on = append(on, it.Name())
+				if ex, ok := it.(exporter); ok && files {
+					if files, err := ex.Files(); err == nil && len(files) > 0 {
+						if p.Files == nil {
+							p.Files = map[string]map[string][]byte{}
+						}
+						p.Files[it.Name()] = files
+					}
+				}
 			}
 		}
 		sort.Strings(on)
@@ -49,9 +70,14 @@ func Snapshot(sections []Section) Profile {
 	return p
 }
 
-// Export writes the current choices to path, or to stdout for "-".
+// Export writes the current choices, with your own skills' files, to path
+// or to stdout for "-".
 func Export(sections []Section, path string) error {
-	b, err := json.MarshalIndent(Snapshot(sections), "", "  ")
+	return write(Snapshot(sections, true), path)
+}
+
+func write(p Profile, path string) error {
+	b, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -111,7 +137,29 @@ func Apply(sections []Section, p Profile) (on, off int, report []string) {
 		for _, n := range want {
 			wanted[n] = true
 		}
-		for _, it := range s.Items() {
+		items := s.Items()
+		have := map[string]bool{}
+		for _, it := range items {
+			have[it.Name()] = true
+		}
+		installed := false
+		for _, n := range want {
+			files, ok := p.Files[n]
+			if have[n] || !ok || InstallFiles == nil {
+				continue
+			}
+			if err := InstallFiles(n, files); err != nil {
+				report = append(report, fmt.Sprintf("%s / %s: %v", s.Title, n, err))
+				delete(wanted, n)
+				continue
+			}
+			on++
+			installed = true
+		}
+		if installed {
+			items = s.Items() // pick up what was just installed
+		}
+		for _, it := range items {
 			if _, ok := it.(launcher); ok {
 				delete(wanted, it.Name())
 				continue
@@ -147,7 +195,8 @@ func Apply(sections []Section, p Profile) (on, off int, report []string) {
 }
 
 // saveAuto records the current choices so they survive and can be exported.
-func saveAuto(sections []Section) { _ = Export(sections, AutoProfilePath()) }
+// It skips file contents to stay small and fast.
+func saveAuto(sections []Section) { _ = write(Snapshot(sections, false), AutoProfilePath()) }
 
 func expandHome(p string) string {
 	if p == "~" || strings.HasPrefix(p, "~/") {

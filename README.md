@@ -26,7 +26,7 @@ Run the same command again to update. Then start it with `cc-patcher`.
 
 - **Patches**: change what no setting can. They run inside Claude Code as hooks, using the cc-patcher binary itself, so they need no Python or Node. Items marked with a red `!` go further and edit Claude Code's own program files.
 - **Config**: change what Claude Code already lets you set: `settings.json` keys, environment variables, the status line, alone or as presets.
-- **Skills**: instructions Claude reads. Install or remove skills in `~/.claude/skills`, bundled or downloaded from GitHub, and switch always-on `CLAUDE.md` rules on and off.
+- **Skills**: instructions Claude reads. Install or remove any skill in `~/.claude/skills`, yours or bundled or downloaded from GitHub, and switch always-on `CLAUDE.md` rules on and off.
 
 ![cc-patcher patches screen](docs/patches.png)
 
@@ -42,6 +42,8 @@ cc-patcher import my-setup.json      # a file or an https:// URL; or press i
 ```
 
 Import makes each section in the file match it exactly: listed items are turned on, the rest of that section off.
+
+The Skills screen lists every skill in `~/.claude/skills`, not just the ones cc-patcher ships, and any of them can be uninstalled. Uninstalled skills go to `~/.claude/cc-patcher/removed-skills`, so ticking them again brings them back; for a linked skill only the link moves. Exports carry the files of your own skills, so importing on a new machine installs them too.
 
 ## Good to know
 

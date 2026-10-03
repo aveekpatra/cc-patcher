@@ -80,9 +80,10 @@ func main() {
 
 // buildSections lists every item, grouped as the TUI shows them.
 func buildSections() []tui.Section {
+	tui.InstallFiles = skills.InstallFiles
 	skillsFS, _ := fs.Sub(bundled, "skills")
 	return []tui.Section{
-		{Title: "Skills", Summary: "instructions Claude reads: skills and CLAUDE.md rules", Items: func() []tui.Toggle {
+		{Title: "Skills", Summary: "instructions Claude reads: all your skills and CLAUDE.md rules", Items: func() []tui.Toggle {
 			var out []tui.Toggle
 			for _, r := range config.Rules(skillsFS) {
 				out = append(out, r)
@@ -91,8 +92,18 @@ func buildSections() []tui.Section {
 			for _, s := range all {
 				out = append(out, s)
 			}
+			skip := map[string]bool{}
+			for _, s := range all {
+				skip[s.Name()] = true
+			}
 			for _, r := range skills.RemoteList() {
 				out = append(out, r)
+				for _, src := range r.Skills {
+					skip[src.Name] = true
+				}
+			}
+			for _, l := range skills.LocalList(skip) {
+				out = append(out, l)
 			}
 			return out
 		}},
