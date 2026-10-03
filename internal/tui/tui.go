@@ -249,15 +249,14 @@ func (m *model) home() string {
 		"",
 		lipgloss.JoinVertical(lipgloss.Left, menu...),
 	)
-	hints := mutedSt.Render("up/down or 1-" + fmt.Sprint(len(m.sections)) + " select   enter open   e export   i import   q quit")
+	hints := mutedSt.Render("enter open   q quit")
 	if m.status != "" {
 		hints = mutedSt.Render(truncate(m.status, max(m.width-60, 40)))
 	}
 	if m.input != nil {
 		hints = "import from: " + *m.input + selSt.Render("_") + mutedSt.Render("   enter apply   esc cancel")
 	}
-	ver := mutedSt.Render("GPL-3.0, free and open source   ") +
-		selSt.Render("g") + mutedSt.Render(" star or contribute on GitHub   "+m.version)
+	ver := selSt.Render("g") + mutedSt.Render(" GitHub   "+m.version)
 	if m.width == 0 {
 		return frame.Render(body + "\n\n" + hints)
 	}
