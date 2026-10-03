@@ -3,9 +3,6 @@
 package patches
 
 import (
-	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/aveekpatra/cc-patcher/internal/claude"
@@ -68,21 +65,8 @@ func (p *Patch) marker() string { return " hook " + p.hookArg }
 
 func (p *Patch) command() string { return `"` + exePath() + `"` + p.marker() }
 
-// exePath is this binary's resolved path, with forward slashes on Windows.
-func exePath() string {
-	exe, err := os.Executable()
-	if err == nil {
-		if r, err := filepath.EvalSymlinks(exe); err == nil {
-			exe = r
-		}
-	} else {
-		exe = "cc-patcher"
-	}
-	if runtime.GOOS == "windows" {
-		exe = filepath.ToSlash(exe)
-	}
-	return exe
-}
+// exePath is where hooks run cc-patcher from.
+func exePath() string { return claude.SelfPath() }
 
 func (p *Patch) Enabled() bool {
 	if p.enabled != nil {

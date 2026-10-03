@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 
+	"github.com/aveekpatra/cc-patcher/internal/claude"
 	"github.com/aveekpatra/cc-patcher/internal/config"
 	"github.com/aveekpatra/cc-patcher/internal/files"
 	"github.com/aveekpatra/cc-patcher/internal/patches"
@@ -36,6 +37,9 @@ func main() {
 				statusline.Run(os.Args[2], os.Stdin, os.Stdout)
 			}
 			return
+		}
+		repair()
+		switch os.Args[1] {
 		case "export":
 			path := tui.DefaultExportPath()
 			if len(os.Args) > 2 {
@@ -71,6 +75,7 @@ func main() {
 		}
 	}
 
+	repair()
 	sections := buildSections()
 	if err := tui.Run(version, sections); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -125,5 +130,12 @@ func buildSections() []tui.Section {
 			}
 			return append(out, patches.TweakccStudio{})
 		}},
+	}
+}
+
+// repair fixes hook paths left pointing at a deleted or temporary build.
+func repair() {
+	if n := claude.RepairPaths(); n > 0 {
+		fmt.Fprintf(os.Stderr, "fixed %d cc-patcher hook path(s) in settings.json\n", n)
 	}
 }
